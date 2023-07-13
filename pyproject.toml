@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "outages-ge-telegram-bot"
+version = "0.1.0"
+description = "Stay tuned with nearest outages in Georgia with this Telegram bot"
+authors = ["roaddust2 <roaddust2@yahoo.com>"]
+license = "GPL-3.0-only"
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiogram = {version = "^3.0.0b7", allow-prereleases = true}
+python-dotenv = "^1.0.0"
+
+
+[tool.poetry.group.dev.dependencies]
+flake8 = "^6.0.0"
+pytest = "^7.4.0"
+coverage = "^7.2.7"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
