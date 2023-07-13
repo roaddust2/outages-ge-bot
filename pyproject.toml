@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "outages-ge-telegram-bot"
+name = "outages-ge-bot"
 version = "0.1.0"
 description = "Stay tuned with nearest outages in Georgia with this Telegram bot"
 authors = ["roaddust2 <roaddust2@yahoo.com>"]
