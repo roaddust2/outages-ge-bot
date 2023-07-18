@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Text, DateTime
+from sqlalchemy import Integer, String, Text, Boolean, DateTime
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import DeclarativeBase
@@ -19,6 +19,7 @@ class Outage(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     type: Mapped[str] = mapped_column(String(255), nullable=False)
+    emergency: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     geo_title: Mapped[str] = mapped_column(String(255), nullable=True)
     en_title: Mapped[str] = mapped_column(String(255), nullable=True)
     geo_info: Mapped[str] = mapped_column(Text, nullable=True)

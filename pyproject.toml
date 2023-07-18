@@ -16,7 +16,7 @@ alembic = "1.11.1"
 python-dotenv = "1.0.0"
 requests = "2.31.0"
 beautifulsoup4 = "4.12.2"
-translate = "3.6.1"
+deep-translator = "1.11.4"
 
 
 [tool.poetry.group.dev.dependencies]
