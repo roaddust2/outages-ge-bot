@@ -1,6 +1,7 @@
 ENV=poetry run
 
 # Util commands
+
 lint:
 	$(ENV) flake8
 
@@ -12,9 +13,26 @@ test-coverage:
 	$(ENV) coverage report --omit=*/tests/*,*/migrations/*
 	$(ENV) coverage xml --omit=*/tests/*,*/migrations/*
 
-# Main commands
-install:
+requirements.txt:
+	poetry export --without-hashes > requirements.txt
+
+
+# Main commands (Poetry)
+
+setup:
 	poetry install
+
+migrate:
+	$(ENV) alembic upgrade head
 
 start:
 	$(ENV) python3 -m app.main
+
+
+# Main commands (Docker)
+
+compose-build:
+	docker compose build
+
+compose-up:
+	docker compose up

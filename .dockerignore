@@ -1,0 +1,10 @@
+.github/
+README.md
+*.pyс
+__pycache__
+compose*.yml
+Dockerfile
+.coverage
+coverage.xml
+.pytest_cache/
+.vscode/

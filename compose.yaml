@@ -1,0 +1,30 @@
+services:
+
+  postgres:
+    container_name: postgres
+    restart: on-failure
+    image: postgres:14.8-bookworm
+    env_file:
+      - .env
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  
+  bot:
+    container_name: bot
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: "outages_ge_bot:latest"
+    env_file:
+      - .env
+    command: sh -c "alembic upgrade head && python3 -m app.main"
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_volume:
