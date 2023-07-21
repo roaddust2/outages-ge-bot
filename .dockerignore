@@ -1,6 +1,6 @@
 .github/
 README.md
-*.pyс
+*.pyc
 __pycache__
 compose*.yml
 Dockerfile
