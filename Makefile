@@ -13,8 +13,8 @@ test-coverage:
 	$(ENV) coverage report --omit=*/tests/*,*/migrations/*
 	$(ENV) coverage xml --omit=*/tests/*,*/migrations/*
 
-requirements.txt:
-	poetry export --without-hashes > requirements.txt
+requirements.txt: 
+	poetry export --without-hashes --no-cache --output=requirements.txt
 
 
 # Main commands (Poetry)
