@@ -78,6 +78,8 @@ def parse_planned_notifications_info(notifications: list) -> list:
             notifications_info (list): A list of notifications info, each packed in dict:
                 [{
                     'date': '2023-07-18',
+                    'type': 'water',
+                    'emergency': False,
                     'geo_title': 'Title',
                     'en_title': 'Title',
                     'geo_info': 'Info',
@@ -91,6 +93,8 @@ def parse_planned_notifications_info(notifications: list) -> list:
         response = requests.get(notification.get('link'))
         soup = BeautifulSoup(response.content, 'html.parser')
         outage_text = soup.css.select(".news-details > p")
+        type = 'water'
+        emergency = False
         date = notification.get('date')
         geo_title = notification.get('title')
         en_title = translator.translate(geo_title)
@@ -105,6 +109,8 @@ def parse_planned_notifications_info(notifications: list) -> list:
         notifications_info.append(
             {
                 'date': date,
+                'type': type,
+                'emergency': emergency,
                 'geo_title': geo_title,
                 'en_title': en_title,
                 'geo_info': geo_info,
@@ -130,6 +136,8 @@ def parse_emergency_notifications_info(notifications: list) -> list:
             notifications_info (list): A list of notifications info, each packed in dict:
                 [{
                     'date': '2023-07-18',
+                    'type': 'water',
+                    'emergency': True,
                     'geo_title': 'Title',
                     'en_title': 'Title',
                     'geo_info': 'Info',
@@ -143,6 +151,8 @@ def parse_emergency_notifications_info(notifications: list) -> list:
         response = requests.get(notification.get('link'))
         soup = BeautifulSoup(response.content, 'html.parser')
         outage_text = soup.css.select(".initial > ul > li > p")
+        type = 'water'
+        emergency = True
         date = notification.get('date')
         geo_title = notification.get('title')
         en_title = translator.translate(geo_title)
@@ -153,6 +163,8 @@ def parse_emergency_notifications_info(notifications: list) -> list:
                 notifications_info.append(
                     {
                         'date': date,
+                        'type': type,
+                        'emergency': emergency,
                         'geo_title': geo_title,
                         'en_title': en_title,
                         'geo_info': geo_info,
