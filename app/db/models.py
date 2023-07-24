@@ -11,6 +11,19 @@ class Base(DeclarativeBase):
     pass
 
 
+class Chat(Base):
+    """Chat model"""
+
+    __tablename__ = "chats"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    chat_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    street: Mapped[str] = mapped_column(String, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"Chat(id={self.id!r}, chat_id={self.chat_id})"
+
+
 class Outage(Base):
     """Outage model"""
 
