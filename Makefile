@@ -22,7 +22,10 @@ requirements.txt:
 setup:
 	poetry install
 
-migrate:
+alembic-revision:
+	$(ENV) alembic revision --autogenerate -m '$(msg)'
+
+alembic-upgrade:
 	$(ENV) alembic upgrade head
 
 start:
