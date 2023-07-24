@@ -17,6 +17,7 @@ python-dotenv = "1.0.0"
 requests = "2.31.0"
 beautifulsoup4 = "4.12.2"
 deep-translator = "1.11.4"
+apscheduler = "^3.10.1"
 
 
 [tool.poetry.group.dev.dependencies]
