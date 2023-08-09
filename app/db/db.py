@@ -42,6 +42,7 @@ def delete_chat(tg_chat_id: str):
                 return False
         except Exception as err:
             logging.error(f'Chat ({tg_chat_id}) wasn\'t deleted, {err}')
+            return None
 
 
 def insert_address(address: dict):
