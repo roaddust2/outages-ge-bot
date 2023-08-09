@@ -1,35 +1,54 @@
-from sqlalchemy import Integer, String, Text, Boolean, DateTime, UniqueConstraint
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import DeclarativeBase
-
 from datetime import datetime
+from typing import List
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import (
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    DateTime
+)
 
 
 class Base(DeclarativeBase):
-    """Base class reffering to MetaData"""
+    """Base class referring to MetaData"""
     pass
 
 
 class Chat(Base):
-    """Chat model"""
+    """Chat or user model in simple words"""
 
     __tablename__ = "chats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    chat_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    street: Mapped[str] = mapped_column(String, nullable=True)
-
-    def __repr__(self) -> str:
-        return f"Chat(id={self.id!r}, chat_id={self.chat_id})"
+    tg_chat_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    addresses: Mapped[List["Address"]] = relationship("Address", cascade="all, delete")
+    sent_outages: Mapped[List["SentOutage"]] = relationship("SentOutage", cascade="all, delete")
 
 
-class Outage(Base):
-    """Outage model"""
+class Address(Base):
+    """
+    Saved addresses,
+    each address connected with chat via chat_id foreign key field
+    """
 
-    __tablename__ = "outages"
+    __tablename__ = "addresses"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"))
+    city: Mapped[str] = mapped_column(String(255), nullable=True)
+    street: Mapped[str] = mapped_column(String(255), nullable=True)
+
+
+class SentOutage(Base):
+    """Outage model"""
+
+    __tablename__ = "sent_outages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"))
     date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     type: Mapped[str] = mapped_column(String(255), nullable=False)
     emergency: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -37,22 +56,3 @@ class Outage(Base):
     en_title: Mapped[str] = mapped_column(String(255), nullable=True)
     geo_info: Mapped[str] = mapped_column(Text, nullable=True)
     en_info: Mapped[str] = mapped_column(Text, nullable=True)
-
-    __table_args__ = (
-        UniqueConstraint(
-            'date', 'geo_title', 'geo_info', name='date_title_info_uc'
-        ),
-    )
-
-    def __repr__(self) -> str:
-        return (
-            "Outage("
-            f"id={self.id!r},"
-            f"date={self.date!r},"
-            f"type={self.type!r},"
-            f"emergency={self.emergency!r},"
-            f"geo_title={self.geo_title!r},"
-            f"en_title={self.en_title!r},"
-            f"geo_info={self.geo_info!r},"
-            f"en_info={self.en_info!r})"
-        )
