@@ -1,0 +1,7 @@
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
+
+def make_row_keyboard(items: list[str]) -> ReplyKeyboardMarkup:
+    """Simple row keyboard with resize"""
+    row = [KeyboardButton(text=item) for item in items]
+    return ReplyKeyboardMarkup(keyboard=[row], resize_keyboard=True)
