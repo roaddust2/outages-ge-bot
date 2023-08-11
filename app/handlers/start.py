@@ -1,5 +1,5 @@
 from aiogram import F, Router
-from aiogram.filters import Command, Text
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ChatMemberUpdated, ReplyKeyboardRemove
 from aiogram.filters.chat_member_updated import (
@@ -8,6 +8,8 @@ from aiogram.filters.chat_member_updated import (
 )
 
 from app.db.db import insert_chat, delete_chat
+
+from app.keyboards.main_kb import make_main_keyboard
 
 
 router = Router()
@@ -25,27 +27,22 @@ async def started(event: ChatMemberUpdated):
     insert_chat(event.chat.id)
 
 
-@router.message(Command(commands=["start"]))
+@router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        f"<b>EN:</b> Hello <b>{message.from_user.first_name}</b>, this bot can alert you to upcoming outages."
-        "The next step is to add an address using command (/add_address) \n\n"
-        f"<b>KA:</b> გამარჯობა <b>{message.from_user.first_name}</b>,"
-        " ამ ბოტს შეუძლია გაფრთხილება მოახლოებული გათიშვის შესახებ."
-        "შემდეგი ნაბიჯი არის მისამართის დამატება ბრძანების (/add_address) გამოყენებით.",
-        reply_markup=ReplyKeyboardRemove()
+        f"Hello <b>{message.from_user.first_name}</b>, this bot can alert you to upcoming outages. "
+        "In order for the bot to be able to send notifications, use <b>\"Add new address\"</b> button.",
+        reply_markup=make_main_keyboard()
     )
     insert_chat(message.chat.id)
 
 
-@router.message(Command(commands=["cancel"]))
-@router.message(Text(text="cancel", ignore_case=True))
-@router.message(Text(text="გააუქმოს"))
+@router.message(Command("cancel"))
+@router.message(F.text.lower() == "cancel")
 async def cmd_cancel(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        "<b>EN:</b> process is canceled.\n\n"
-        "<b>KA:</b> პროცესი გაუქმებულია.\n\n",
-        reply_markup=ReplyKeyboardRemove()
+        "Process has been canceled.\n\n",
+        reply_markup=make_main_keyboard()
     )

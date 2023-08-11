@@ -2,11 +2,14 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.db.models import Chat
+from app.db.models import Chat, Address
 from settings import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 
 
 engine = create_engine(f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}')
+
+
+MAX_ADDRESSES_ALLOWED = 2
 
 
 def insert_chat(tg_chat_id: str):
@@ -15,14 +18,14 @@ def insert_chat(tg_chat_id: str):
     with Session(engine) as session:
         session.begin()
         try:
-            chat = session.add(Chat(tg_chat_id=tg_chat_id,))
+            session.add(Chat(tg_chat_id=tg_chat_id,))
             session.commit()
             logging.info(f'New chat ({tg_chat_id}) was inserted to database')
-            return chat
+            return True
         except IntegrityError:
             session.rollback()
             logging.info(f'Chat ({tg_chat_id}) wasn\'t inserted, it already exists')
-            return None
+            return False
 
 
 def delete_chat(tg_chat_id: str):
@@ -45,9 +48,51 @@ def delete_chat(tg_chat_id: str):
             return None
 
 
-def insert_address(address: dict):
+def is_address_num_exceeded(tg_chat_id: str) -> bool:
+    '''Check if address num count
+    for specific chat exceeded
+    returns bool'''
+
+    with Session(engine) as session:
+        session.begin()
+        chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
+        chat_adresses_count = session.query(Address.id).filter_by(chat_id=chat.id).count()
+        if chat_adresses_count < 2:
+            return False
+        else:
+            return True
+
+
+def insert_address(tg_chat_id: str, address: dict):
     '''Insert new address into database'''
-    pass
+
+    city = address.get('city').lower()
+    street = address.get('street').lower()
+
+    with Session(engine) as session:
+        session.begin()
+        try:
+            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
+            chat_adresses_count = session.query(Address.id).filter_by(chat_id=chat.id).count()
+            if chat_adresses_count < 2:
+                session.add(
+                    Address(
+                        chat_id=chat.id,
+                        city=city,
+                        street=street,))
+                session.commit()
+                logging.info(
+                    f"New address ({street, city}) added for chat ({tg_chat_id})"
+                )
+                return True
+            else:
+                logging.error(f'Address for chat ({tg_chat_id}) wasn\'t added, number of addresses exceeded')
+                return False
+        except Exception as err:
+            session.rollback()
+            logging.error(f'Address for chat ({tg_chat_id}) wasn\'t added, {err}')
+            return None
+        
 
 
 def delete_address(address: dict):

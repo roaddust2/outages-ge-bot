@@ -9,7 +9,7 @@ packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-aiogram = {version = "^3.0.0b7", allow-prereleases = true}
+aiogram = {version = "^3.0.0rc1", allow-prereleases = true}
 sqlalchemy = "2.0.18"
 psycopg2-binary = "2.9.6"
 alembic = "1.11.1"
@@ -17,7 +17,7 @@ python-dotenv = "1.0.0"
 requests = "2.31.0"
 beautifulsoup4 = "4.12.2"
 deep-translator = "1.11.4"
-apscheduler = "^3.10.1"
+apscheduler = "3.10.1"
 
 
 [tool.poetry.group.dev.dependencies]
