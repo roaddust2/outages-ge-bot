@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import UniqueConstraint
 from sqlalchemy import (
     ForeignKey,
     Integer,
@@ -40,6 +41,15 @@ class Address(Base):
     chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"))
     city: Mapped[str] = mapped_column(String(255), nullable=True)
     street: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'chat_id', 'city', 'street', name='chat_id_city_street_uc'
+        ),
+    )
+
+    def __repr__(self) -> str:
+        return f"{self.street}, {self.city.capitalize()}"
 
 
 class SentOutage(Base):

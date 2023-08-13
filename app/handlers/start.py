@@ -31,8 +31,9 @@ async def started(event: ChatMemberUpdated):
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        f"Hello <b>{message.from_user.first_name}</b>, this bot can alert you to upcoming outages. "
-        "In order for the bot to be able to send notifications, use <b>\"Add new address\"</b> button.",
+        f"Hello <b>{message.from_user.first_name}</b>, this bot can alert you to upcoming outages.\n\n"
+        "In order for the bot to be able to send notifications, use <b>\"Add new address\"</b> button "
+        "or (/add_address) command.",
         reply_markup=make_main_keyboard()
     )
     insert_chat(message.chat.id)
