@@ -83,7 +83,7 @@ def insert_address(tg_chat_id: str, address: dict):
     """Insert new address into database"""
 
     city = address.get('city').lower()
-    street = address.get('street').lower()
+    street = address.get('street')
 
     with Session(engine) as session:
         session.begin()
@@ -120,6 +120,17 @@ def select_addresses(tg_chat_id: str):
                 result.add(address.full_address)
             return result
         except Exception:
+            return None
+
+
+def select_addresses_by_cities(cities: list):
+    with Session(engine) as session:
+        session.begin()
+        try:
+            addresses = session.query(Address).filter(Address.city.in_(cities)).all()
+            return addresses
+        except Exception as err:
+            logging.error(f'Error occured, {err}')
             return None
 
 
