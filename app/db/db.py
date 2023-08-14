@@ -13,7 +13,7 @@ engine = create_engine(f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT
 # Inserting and removing chats from database
 
 def insert_chat(tg_chat_id: str):
-    '''Insert new chat into database'''
+    """Insert new chat into database"""
 
     with Session(engine) as session:
         session.begin()
@@ -29,7 +29,7 @@ def insert_chat(tg_chat_id: str):
 
 
 def delete_chat(tg_chat_id: str):
-    '''Delete chat from database'''
+    """Delete chat from database"""
 
     with Session(engine) as session:
         session.begin()
@@ -53,19 +53,22 @@ def delete_chat(tg_chat_id: str):
 
 MAX_ADDRESSES_PER_CHAT = 2
 
+
 class AddressesNumExceeded(Exception):
-    '''Raises when user try to add more addresses than allowed'''
+    """Raises when user try to add more addresses than allowed"""
     pass
+
 
 class AddressAlreadyExists(Exception):
-    '''Raises when user try to add existing address'''
+    """Raises when user try to add existing address"""
     pass
 
 
-def is_address_num_exceeded(tg_chat_id: str) -> bool:
-    '''Check if address num count
-    for specific chat exceeded
-    returns bool'''
+def is_address_num_exceeded(tg_chat_id: str):
+    """
+    Check if address num count for specific chat exceeded
+    if fails raises AddressesNumExceeded
+    """
 
     with Session(engine) as session:
         session.begin()
@@ -77,7 +80,7 @@ def is_address_num_exceeded(tg_chat_id: str) -> bool:
 
 
 def insert_address(tg_chat_id: str, address: dict):
-    '''Insert new address into database'''
+    """Insert new address into database"""
 
     city = address.get('city').lower()
     street = address.get('street').lower()
@@ -92,58 +95,46 @@ def insert_address(tg_chat_id: str, address: dict):
                     city=city,
                     street=street,))
             session.commit()
-            logging.info(f"New address ({street, city}) added for chat ({tg_chat_id}).")
+            logging.info(f"New address ({street, city}) inserted for chat ({tg_chat_id}).")
             return True
-        except IntegrityError as err:
+        except IntegrityError:
             session.rollback()
             logging.info(f"Address ({street, city}) already exists for chat ({tg_chat_id}).")
             raise AddressAlreadyExists
         except Exception as err:
             session.rollback()
-            logging.error(f'Address for chat ({tg_chat_id}) wasn\'t added, {err}')
+            logging.error(f'Address for chat ({tg_chat_id}) wasn\'t inserted, {err}')
             return None
 
 
 def select_addresses(tg_chat_id: str):
-    '''Select all addresses from database based on chat id'''
+    """Select all addresses from database based on chat id"""
 
     with Session(engine) as session:
         session.begin()
         try:
             chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
             addresses = session.query(Address).filter_by(chat_id=chat.id).all()
-            return addresses
+            result = set()
+            for address in addresses:
+                result.add(address.full_address)
+            return result
         except Exception:
             return None
 
 
-def delete_address(tg_chat_id: str, address: dict):
-    '''Delete address from database'''
-    pass
+def delete_address(tg_chat_id: str, full_address: str):
+    """Delete address filtered by chat id and full_address field"""
 
-
-# def insert_sent_outage(input: dict) -> None:
-#     '''
-#     Insert sent outages related to chats into database
-#     '''
-#     with Session(engine) as session:
-#         session.begin()
-#         try:
-#             new_outage = session.add(
-#                 Outage(
-#                     date=input['date'],
-#                     type='water',
-#                     emergency=input['emergency'],
-#                     geo_title=input.get('geo_title'),
-#                     en_title=input.get('en_title'),
-#                     geo_info=input.get('geo_info'),
-#                     en_info=input.get('en_info'),
-#                 )
-#             )
-#             session.commit()
-#             logging.info(f'Added new outage - {new_outage}')
-#             return new_outage
-#         except IntegrityError as err:
-#             session.rollback()
-#             logging.error(f'{err} - outage already exists')
-#             return None
+    with Session(engine) as session:
+        session.begin()
+        try:
+            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
+            address = session.query(Address).filter_by(chat_id=chat.id, full_address=full_address).first()
+            session.delete(address)
+            session.commit()
+            logging.info(f"Address ({full_address}) for chat ({tg_chat_id}) has been successfully deleted.")
+            return True
+        except Exception as err:
+            logging.error(f'Address for chat ({tg_chat_id}) wasn\'t deleted, {err}')
+            return None

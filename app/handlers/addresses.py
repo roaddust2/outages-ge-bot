@@ -1,10 +1,11 @@
+import logging
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from app.keyboards.basic_kbs import make_row_keyboard
+from app.keyboards.basic_kbs import make_row_keyboard, make_col_keyboard
 from app.keyboards.main_kb import make_main_keyboard
 
 from app.db.db import (
@@ -13,13 +14,16 @@ from app.db.db import (
     is_address_num_exceeded,
     insert_address,
     select_addresses,
+    delete_address,
 )
 
 
-AVAILIBLE_CITIES = ["Tbilisi",]
-
-
 router = Router()
+
+
+# Add address handlers
+
+AVAILIBLE_CITIES = ["Tbilisi",]
 
 
 class AddAddress(StatesGroup):
@@ -51,8 +55,7 @@ async def city_chosen(message: Message, state: FSMContext):
     await state.update_data(chosen_city=message.text)
     await message.answer(
         "<b>2. Enter a street:</b>\n\n"
-        "<i>You can text in both English or Georgian.</i>"
-        ,
+        "<i>You can text in both English or Georgian.</i>",
         reply_markup=ReplyKeyboardRemove()
     )
     await state.set_state(AddAddress.entering_street)
@@ -84,6 +87,51 @@ async def street_entered(message: Message, state: FSMContext):
         )
         await state.clear()
 
+
+# Remove address handlers
+
+class RemoveAddress(StatesGroup):
+    choosing_address = State()
+
+
+@router.message(Command("remove_address"))
+@router.message(F.text.lower() == "remove address")
+async def cmd_remove_address(message: Message, state: FSMContext):
+    addresses = select_addresses(message.chat.id)
+    if len(addresses) < 1:
+        await message.answer(
+            "You do not have any saved addresses.\n"
+            "To add address use <b>\"Add new address\"</b> button "
+            "or (/add_address) command.",
+            reply_markup=make_main_keyboard()
+        )
+    else:
+        await message.answer(
+            "<b>Choose address that you want to remove from the above:</b>",
+            reply_markup=make_col_keyboard(addresses)
+        )
+        await state.set_state(RemoveAddress.choosing_address)
+
+
+@router.message(RemoveAddress.choosing_address)
+async def address_chosen(message: Message, state: FSMContext):
+    addresses = select_addresses(message.chat.id)
+    if message.text in addresses:
+        delete_address(message.chat.id, message.text)
+        await message.answer(
+            "Address has been successfully deleted!",
+            reply_markup=make_main_keyboard()
+        )
+        await state.clear()
+    else:
+        logging.info(f"{message.text}, {addresses}")
+        await message.answer(
+            "The address you entered is incorrect, please choose from the above:",
+            reply_markup=make_col_keyboard(addresses)
+        )
+
+
+# Display list of addresses for specific chat handler
 
 @router.message(Command("list_addresses"))
 @router.message(F.text.lower() == "my addresses")

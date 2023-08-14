@@ -2,14 +2,14 @@ from datetime import datetime
 from typing import List
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import UniqueConstraint
 from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
     Text,
     Boolean,
-    DateTime
+    DateTime,
+    UniqueConstraint
 )
 
 
@@ -29,6 +29,15 @@ class Chat(Base):
     sent_outages: Mapped[List["SentOutage"]] = relationship("SentOutage", cascade="all, delete")
 
 
+def default_full_address(context):
+    """
+    Context sensetive default function for full_address field
+    """
+    street = context.get_current_parameters().get("street")
+    city = context.get_current_parameters().get("city")
+    return f"{street}, {city.capitalize()}"
+
+
 class Address(Base):
     """
     Saved addresses,
@@ -41,15 +50,13 @@ class Address(Base):
     chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"))
     city: Mapped[str] = mapped_column(String(255), nullable=True)
     street: Mapped[str] = mapped_column(String(255), nullable=True)
+    full_address: Mapped[str] = mapped_column(Text, nullable=True, default=default_full_address)
 
     __table_args__ = (
         UniqueConstraint(
             'chat_id', 'city', 'street', name='chat_id_city_street_uc'
         ),
     )
-
-    def __repr__(self) -> str:
-        return f"{self.street}, {self.city.capitalize()}"
 
 
 class SentOutage(Base):
