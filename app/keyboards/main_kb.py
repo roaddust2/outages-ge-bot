@@ -12,8 +12,8 @@ def make_main_keyboard() -> ReplyKeyboardMarkup:
         KeyboardButton(text="My addresses"),
         KeyboardButton(text="Remove address")
     )
-    # builder.row(
-    #     KeyboardButton(text="Help"),
-    #     KeyboardButton(text="About")
-    # )
+    builder.row(
+        KeyboardButton(text="Help"),
+        KeyboardButton(text="About")
+    )
     return builder.as_markup(resize_keyboard=True)
