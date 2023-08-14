@@ -21,9 +21,9 @@ apscheduler = "3.10.1"
 
 
 [tool.poetry.group.dev.dependencies]
-flake8 = "^6.0.0"
+flake8 = "^6.1.0"
 pytest = "^7.4.0"
-coverage = "^7.2.7"
+coverage = "^7.3.0"
 
 [build-system]
 requires = ["poetry-core"]
