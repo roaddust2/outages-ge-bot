@@ -16,7 +16,7 @@ EMERGENCY_URL = urljoin(ROOT_URL, '/en/gadaudebeli')
 
 
 def scrap_notifications(type: str) -> list:
-    '''
+    """
     Scraps notifications based on their type from webpage
 
         Parameters:
@@ -30,7 +30,7 @@ def scrap_notifications(type: str) -> list:
                     'title': 'Title',
                     'link': 'https://example.com',
                 }]
-    '''
+    """
 
     _map = {
         'planned': PLANNED_URL,
@@ -63,7 +63,7 @@ def scrap_notifications(type: str) -> list:
 
 
 def parse_planned_notifications_info(notifications: list) -> list:
-    '''
+    """
     Parses info from planned notifications
 
         Parameters:
@@ -85,7 +85,7 @@ def parse_planned_notifications_info(notifications: list) -> list:
                     'geo_info': 'Info',
                     'en_info': 'Info',
                 }]
-    '''
+    """
 
     notifications_info = []
 
@@ -121,7 +121,7 @@ def parse_planned_notifications_info(notifications: list) -> list:
 
 
 def parse_emergency_notifications_info(notifications: list) -> list:
-    '''
+    """
     Parses info from emergency notifications
 
         Parameters:
@@ -143,7 +143,7 @@ def parse_emergency_notifications_info(notifications: list) -> list:
                     'geo_info': 'Info',
                     'en_info': 'Info',
                 }]
-    '''
+    """
 
     notifications_info = []
 
