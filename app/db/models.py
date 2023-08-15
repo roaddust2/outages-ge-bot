@@ -47,6 +47,7 @@ class Address(Base):
     __tablename__ = "addresses"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    chat: Mapped[Chat] = relationship("Chat", lazy="subquery", back_populates="addresses")
     chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"))
     city: Mapped[str] = mapped_column(String(255), nullable=True)
     street: Mapped[str] = mapped_column(String(255), nullable=True)
