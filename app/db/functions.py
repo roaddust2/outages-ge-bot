@@ -2,7 +2,7 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.db.models import Chat, Address
+from app.db.models import Chat, Address, SentOutage
 from settings import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 
 
@@ -124,6 +124,8 @@ def select_addresses(tg_chat_id: str):
 
 
 def select_addresses_by_cities(cities: list):
+    """Delect addresses filtered by cities"""
+
     with Session(engine) as session:
         session.begin()
         try:
@@ -149,3 +151,35 @@ def delete_address(tg_chat_id: str, full_address: str):
         except Exception as err:
             logging.error(f'Address for chat ({tg_chat_id}) wasn\'t deleted, {err}')
             return None
+
+
+# Functions that operating with SentOutage instances
+
+class OutageAlreadySent(Exception):
+    """Raises when user try to add existing address"""
+    pass
+
+def insert_sent_outage(tg_chat_id: str, outage: dict):
+    """Insert outage assosiated with specific chat"""
+
+    with Session(engine) as session:
+        session.begin()
+        try:
+            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
+            session.add(
+                SentOutage(
+                    chat_id=chat.id,
+                    date=outage.get("date"),
+                    type=outage.get("type"),
+                    emergency=outage.get("emergency"),
+                    geo_title=outage.get("geo_title"),
+                    en_title=outage.get("en_title"),
+                    geo_info=outage.get("en_info"),
+                )
+            )
+            session.commit()
+            logging.info(f"SentOutage ({outage}) inserted for chat ({tg_chat_id}).")
+        except IntegrityError:
+            session.rollback()
+            logging.info(f"SentOutage ({outage}) already exists for chat ({tg_chat_id}).")
+            raise OutageAlreadySent

@@ -8,7 +8,7 @@ from aiogram.types import Message, ReplyKeyboardRemove
 from app.keyboards.basic_kbs import make_row_keyboard, make_col_keyboard
 from app.keyboards.main_kb import make_main_keyboard
 
-from app.db.db import (
+from app.db.functions import (
     AddressesNumExceeded,
     AddressAlreadyExists,
     is_address_num_exceeded,

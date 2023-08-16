@@ -7,7 +7,7 @@ from aiogram.filters.chat_member_updated import (
     MEMBER, KICKED
 )
 
-from app.db.db import insert_chat, delete_chat
+from app.db.functions import insert_chat, delete_chat
 
 from app.keyboards.main_kb import make_main_keyboard
 
