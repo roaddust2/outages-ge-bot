@@ -1,9 +1,13 @@
+from datetime import datetime
 import logging
-from aiogram import Router, F
+from aiogram import Bot, Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardRemove
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from app.handlers.jobs import notify
 
 from app.keyboards.basic_kbs import make_row_keyboard, make_col_keyboard
 from app.keyboards.main_kb import make_main_keyboard
@@ -13,7 +17,7 @@ from app.db.functions import (
     AddressAlreadyExists,
     is_address_num_exceeded,
     insert_address,
-    select_addresses,
+    select_full_addresses,
     delete_address,
 )
 
@@ -70,7 +74,8 @@ async def city_chosen_incorrectly(message: Message):
 
 
 @router.message(AddAddress.entering_street)
-async def street_entered(message: Message, state: FSMContext):
+async def street_entered(message: Message, bot: Bot, state: FSMContext, apscheduler: AsyncIOScheduler):
+
     user_data = await state.get_data()
     try:
         insert_address(message.chat.id, {"city": user_data['chosen_city'], "street": message.text})
@@ -80,6 +85,13 @@ async def street_entered(message: Message, state: FSMContext):
             reply_markup=make_main_keyboard()
         )
         await state.clear()
+        apscheduler.add_job(
+            notify,
+            trigger='cron',
+            hour=datetime.now().hour,
+            minute=datetime.now().minute + 15,
+            start_date=datetime.now(),
+            kwargs={"bot": bot, "tg_chat_id": message.chat.id})
     except AddressAlreadyExists:
         await message.answer(
             f"Address <b>{message.text}, {user_data['chosen_city']}</b> already exists.",
@@ -97,7 +109,7 @@ class RemoveAddress(StatesGroup):
 @router.message(Command("remove_address"))
 @router.message(F.text.lower() == "remove address")
 async def cmd_remove_address(message: Message, state: FSMContext):
-    addresses = select_addresses(message.chat.id)
+    addresses = select_full_addresses(message.chat.id)
     if len(addresses) < 1:
         await message.answer(
             "You do not have any saved addresses.\n"
@@ -115,7 +127,7 @@ async def cmd_remove_address(message: Message, state: FSMContext):
 
 @router.message(RemoveAddress.choosing_address)
 async def address_chosen(message: Message, state: FSMContext):
-    addresses = select_addresses(message.chat.id)
+    addresses = select_full_addresses(message.chat.id)
     if message.text in addresses:
         delete_address(message.chat.id, message.text)
         await message.answer(
@@ -136,7 +148,7 @@ async def address_chosen(message: Message, state: FSMContext):
 @router.message(Command("list_addresses"))
 @router.message(F.text.lower() == "my addresses")
 async def cmd_list_addresses(message: Message):
-    addresses = select_addresses(message.chat.id)
+    addresses = select_full_addresses(message.chat.id)
     if len(addresses) < 1:
         await message.answer(
             "You do not have any saved addresses.\n"

@@ -115,24 +115,24 @@ def select_addresses(tg_chat_id: str):
         try:
             chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
             addresses = session.query(Address).filter_by(chat_id=chat.id).all()
+            return addresses
+        except Exception:
+            return None
+
+
+def select_full_addresses(tg_chat_id: str):
+    """Select all full addresses from database based on chat id"""
+
+    with Session(engine) as session:
+        session.begin()
+        try:
+            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
+            addresses = session.query(Address).filter_by(chat_id=chat.id).all()
             result = set()
             for address in addresses:
                 result.add(address.full_address)
             return result
         except Exception:
-            return None
-
-
-def select_addresses_by_cities(cities: list):
-    """Delect addresses filtered by cities"""
-
-    with Session(engine) as session:
-        session.begin()
-        try:
-            addresses = session.query(Address).filter(Address.city.in_(cities)).all()
-            return addresses
-        except Exception as err:
-            logging.error(f'Error occured, {err}')
             return None
 
 
