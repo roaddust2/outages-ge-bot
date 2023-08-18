@@ -159,6 +159,7 @@ class OutageAlreadySent(Exception):
     """Raises when user try to add existing address"""
     pass
 
+
 def insert_sent_outage(tg_chat_id: str, outage: dict):
     """Insert outage assosiated with specific chat"""
 

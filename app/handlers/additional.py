@@ -1,11 +1,8 @@
-from aiogram import F, Bot, Router
+from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import Message
-from app.db.functions import OutageAlreadySent, insert_sent_outage
 
 from app.keyboards.main_kb import make_main_keyboard
-
-from app.scheduler.tasks import collect_addresses_with_outages
 
 
 router = Router()
@@ -37,30 +34,3 @@ async def cmd_about(message: Message):
         disable_web_page_preview=True,
         reply_markup=make_main_keyboard()
     )
-
-# TODO: Create a scheduler for this task, remove manual handler
-
-@router.message(Command("check_gwp"))
-async def cmd_check(message: Message, bot: Bot):
-
-    outage_message = "{0} <b>{1}</b>\n\n{2}"
-    mapping = {"water": "💧", "electricity": "⚡️"}
-
-    addresses_outages = collect_addresses_with_outages("GWP")
-    print(addresses_outages)
-    for _ in addresses_outages:
-        for address, outage in _.items():
-            try:
-                insert_sent_outage(address.chat.tg_chat_id, outage)
-                print(outage)
-                await bot.send_message(
-                    chat_id=address.chat.tg_chat_id,
-                    text=outage_message.format(
-                        mapping[outage.get("type")],
-                        outage.get("en_title"),
-                        outage.get("en_info")
-                    ),
-                    reply_markup=make_main_keyboard()
-                )
-            except OutageAlreadySent:
-                pass
