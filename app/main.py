@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
-from settings import API_TOKEN
+from settings import API_TOKEN, TIMEZONE
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 async def main():
     bot = Bot(token=API_TOKEN, parse_mode="HTML")
     dp = Dispatcher()
-    scheduler = AsyncIOScheduler(timezone="Asia/Tbilisi")
+    scheduler = AsyncIOScheduler(timezone=TIMEZONE)
     scheduler.start()
     dp.update.middleware.register(SchedulerMiddleware(scheduler))
     dp.include_routers(start.router, addresses.router, additional.router)

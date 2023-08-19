@@ -3,10 +3,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.db.models import Chat, Address, SentOutage
-from settings import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+from settings import DATABASE_URL
 
-
-engine = create_engine(f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}')
+engine = create_engine(DATABASE_URL)
 
 
 # Functions that operating with Chat instances
