@@ -1,14 +1,9 @@
-from datetime import datetime
 import logging
-from aiogram import Bot, Router, F
+from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardRemove
-
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from app.handlers.jobs import notify
-
 from app.keyboards.basic_kbs import make_row_keyboard, make_col_keyboard
 from app.keyboards.main_kb import make_main_keyboard
 
@@ -74,7 +69,7 @@ async def city_chosen_incorrectly(message: Message):
 
 
 @router.message(AddAddress.entering_street)
-async def street_entered(message: Message, bot: Bot, state: FSMContext, apscheduler: AsyncIOScheduler):
+async def street_entered(message: Message, state: FSMContext):
 
     user_data = await state.get_data()
     try:
@@ -85,13 +80,6 @@ async def street_entered(message: Message, bot: Bot, state: FSMContext, apschedu
             reply_markup=make_main_keyboard()
         )
         await state.clear()
-        apscheduler.add_job(
-            notify,
-            trigger='cron',
-            hour=datetime.now().hour,
-            minute=datetime.now().minute + 15,
-            start_date=datetime.now(),
-            kwargs={"bot": bot, "tg_chat_id": message.chat.id})
     except AddressAlreadyExists:
         await message.answer(
             f"Address <b>{message.text}, {user_data['chosen_city']}</b> already exists.",

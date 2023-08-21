@@ -2,8 +2,6 @@ from datetime import datetime
 from typing import List
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from uuid import UUID 
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy import (
     ForeignKey,
     Integer,
@@ -27,7 +25,6 @@ class Chat(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     tg_chat_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    job_uuid: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=True, unique=True)
     addresses: Mapped[List["Address"]] = relationship("Address", cascade="all, delete")
     sent_outages: Mapped[List["SentOutage"]] = relationship("SentOutage", cascade="all, delete")
 
