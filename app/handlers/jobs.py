@@ -1,13 +1,14 @@
 from aiogram import Bot
-
 from app.keyboards.main_kb import make_main_keyboard
-from app.scrapers.gwp import scrap_notifications, parse_notifications_info
+from app.scrapers.gwp import collect_outages
 from app.db.functions import (
     OutageAlreadySent,
     insert_sent_outage,
     select_addresses
 )
 
+
+# Job for sending outage notifications to chats
 
 OUTAGE_MESSAGE = "{0}{1} <b>{2}</b>\n\n{3}"
 
@@ -19,17 +20,22 @@ EMOJIS_MAP = {
 }
 
 
-async def notify(bot: Bot, tg_chat_id: str):
+async def notify(bot: Bot):  # noqa: C901
 
-    addresses = select_addresses(tg_chat_id)
-    outages = parse_notifications_info(scrap_notifications())
+    addresses = select_addresses()
+    outages = collect_outages()
+
+    if not outages:
+        pass
 
     for outage in outages:
         type = outage.get("type")
         emergency = outage.get("emergency")
         geo_info = outage.get("geo_info")
         en_info = outage.get("en_info")
+
         for address in addresses:
+            tg_chat_id = address.chat.tg_chat_id
             street = address.street
             if street in geo_info or street in en_info:
                 try:

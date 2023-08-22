@@ -12,12 +12,19 @@ from settings import translator
 TYPE = 'water'
 ROOT_URL = 'https://www.gwp.ge'
 URLS = [
-    {"url": urljoin(ROOT_URL, '/en/dagegmili'), "emergency": False},
-    {"url": urljoin(ROOT_URL, '/en/gadaudebeli'), "emergency": True}
+    {"url": urljoin(ROOT_URL, '/ka/dagegmili'), "emergency": False},
+    {"url": urljoin(ROOT_URL, '/ka/gadaudebeli'), "emergency": True}
 ]
 
 
 # GWP provider scraper and parser
+
+def collect_outages() -> list:
+    """Wrapper"""
+
+    outages = parse_notifications_info(scrap_notifications())
+    return outages
+
 
 def request_soup(url: str) -> BeautifulSoup:
     """Returns soup from given url"""

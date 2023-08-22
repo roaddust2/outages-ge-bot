@@ -7,6 +7,7 @@ from app.handlers import (
     addresses,
     additional,
 )
+from app.handlers.jobs import notify
 from settings import API_TOKEN, TIMEZONE
 
 
@@ -18,6 +19,7 @@ async def main():
     dp = Dispatcher()
     scheduler = AsyncIOScheduler(timezone=TIMEZONE)
     scheduler.start()
+    scheduler.add_job(notify, trigger="interval", minutes=1, kwargs={"bot": bot})
     dp.include_routers(start.router, addresses.router, additional.router)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())

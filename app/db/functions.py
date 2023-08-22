@@ -106,14 +106,13 @@ def insert_address(tg_chat_id: str, address: dict):
             return None
 
 
-def select_addresses(tg_chat_id: str):
-    """Select all addresses from database based on chat id"""
+def select_addresses():
+    """Select all addresses from database"""
 
     with Session(engine) as session:
         session.begin()
         try:
-            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
-            addresses = session.query(Address).filter_by(chat_id=chat.id).all()
+            addresses = session.query(Address).all()
             return addresses
         except Exception:
             return None
@@ -131,7 +130,8 @@ def select_full_addresses(tg_chat_id: str):
             for address in addresses:
                 result.add(address.full_address)
             return result
-        except Exception:
+        except Exception as err:
+            logging.error(f'{err}')
             return None
 
 
