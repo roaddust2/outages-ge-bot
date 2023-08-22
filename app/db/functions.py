@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -114,7 +115,8 @@ def select_addresses():
         try:
             addresses = session.query(Address).all()
             return addresses
-        except Exception:
+        except Exception as err:
+            logging.error(f'Couldn\'t select addresses, {err}')
             return None
 
 
@@ -131,7 +133,7 @@ def select_full_addresses(tg_chat_id: str):
                 result.add(address.full_address)
             return result
         except Exception as err:
-            logging.error(f'{err}')
+            logging.error(f'Couldn\'t select full addresses, {err}')
             return None
 
 
@@ -183,3 +185,19 @@ def insert_sent_outage(tg_chat_id: str, outage: dict):
             session.rollback()
             logging.info(f"SentOutage ({outage}) already exists for chat ({tg_chat_id}).")
             raise OutageAlreadySent
+
+
+def delete_sent_outages():
+    """Delete outdated sent outages"""
+
+    one_week_before = datetime.now() - timedelta(days=7)
+
+    with Session(engine) as session:
+        session.begin()
+        try:
+            sent_outages = session.query(SentOutage).filter(SentOutage.date < one_week_before).all()
+            for row in sent_outages:
+                session.delete(row)
+            session.commit()
+        except Exception as err:
+            logging.error(f"Couldn't delete outdated sent outages, {err}")

@@ -4,7 +4,8 @@ from app.scrapers.gwp import collect_outages
 from app.db.functions import (
     OutageAlreadySent,
     insert_sent_outage,
-    select_addresses
+    select_addresses,
+    delete_sent_outages
 )
 
 
@@ -52,3 +53,10 @@ async def notify(bot: Bot):  # noqa: C901
                     )
                 except OutageAlreadySent:
                     pass
+
+
+# Job for cleaning db from outdated sent notifications
+
+async def clean_sent_outages():
+
+    await delete_sent_outages()
