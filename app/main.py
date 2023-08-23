@@ -19,7 +19,7 @@ async def main():
     dp = Dispatcher()
     scheduler = AsyncIOScheduler(timezone=TIMEZONE)
     scheduler.start()
-    scheduler.add_job(notify, trigger="interval", minutes=1, kwargs={"bot": bot})
+    scheduler.add_job(notify, trigger="interval", minutes=15, kwargs={"bot": bot})
     scheduler.add_job(clean_sent_outages, trigger="cron", day_of_week="sun", hour=0, minute=0)
     dp.include_routers(start.router, addresses.router, additional.router)
     await bot.delete_webhook(drop_pending_updates=True)

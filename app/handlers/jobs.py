@@ -1,6 +1,8 @@
 from aiogram import Bot
 from app.keyboards.main_kb import make_main_keyboard
-from app.scrapers.gwp import collect_outages
+import app.scrapers.gwp as GWP
+import app.scrapers.telasi as TELASI
+
 from app.db.functions import (
     OutageAlreadySent,
     insert_sent_outage,
@@ -11,7 +13,7 @@ from app.db.functions import (
 
 # Job for sending outage notifications to chats
 
-OUTAGE_MESSAGE = "{0}{1} <b>{2}</b>\n\n{3}"
+OUTAGE_MESSAGE = "{0}{1} <b>{2} {3}</b>\n\n{4}"
 
 EMOJIS_MAP = {
     ":no_entry:": "\u26D4\uFE0F",
@@ -23,8 +25,15 @@ EMOJIS_MAP = {
 
 async def notify(bot: Bot):  # noqa: C901
 
+    outages = []
+
+    gwp_outages = GWP.collect_outages()
+    telasi_outages = TELASI.collect_outages()
+
+    outages.extend(gwp_outages)
+    outages.extend(telasi_outages)
+
     addresses = select_addresses()
-    outages = collect_outages()
 
     if not outages:
         pass
@@ -46,6 +55,7 @@ async def notify(bot: Bot):  # noqa: C901
                         text=OUTAGE_MESSAGE.format(
                             EMOJIS_MAP[":bangbang:"] if emergency else EMOJIS_MAP[":no_entry:"],
                             EMOJIS_MAP[":droplet:"] if type == "water" else EMOJIS_MAP[":bulb:"],
+                            outage.get("date"),
                             outage.get("en_title"),
                             en_info
                         ),
