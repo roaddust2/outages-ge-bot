@@ -3,9 +3,6 @@ name: Code coverage
 on:
   workflow_call:
 
-env:
-  CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
-
 jobs:
   code_coverage:
     runs-on: ubuntu-latest
@@ -22,7 +19,9 @@ jobs:
           pip install poetry
           poetry install
       - name: Test & publish code coverage
-        uses: paambaati/codeclimate-action@v3.2.0
+        uses: paambaati/codeclimate-action@v5.0.0
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
         with:
           coverageCommand: make test-coverage
           debug: true
