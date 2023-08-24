@@ -10,8 +10,3 @@ jobs:
     name: Lint & Test
     uses: ./.github/workflows/lint_test.yml
     secrets: inherit
-  code_coverage:
-    name: Code coverage
-    uses: ./.github/workflows/code_coverage.yml
-    needs: [lint_test]
-    secrets: inherit
