@@ -8,16 +8,14 @@ services:
       - .env
     volumes:
       - postgres_volume:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    command: postgres -p 5435
+    expose:
+      - 5435
   
   bot:
     container_name: bot
     restart: always
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: roaddust2/outages-ge-bot
+    image: roaddust2/outages-ge-bot:0.1.0
     env_file:
       - .env
     command: sh -c "alembic upgrade head && python3 -m app.main"

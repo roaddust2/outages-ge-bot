@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from deep_translator import GoogleTranslator
 
 
@@ -26,6 +28,11 @@ DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NA
 # https://apscheduler.readthedocs.io/en/3.x/userguide.html#configuring-the-scheduler
 
 TIMEZONE = "Asia/Tbilisi"
+
+jobstores = {
+    'default': MemoryJobStore(),
+    'sqlalchemy': SQLAlchemyJobStore(url=DATABASE_URL)
+}
 
 
 # Translation configuration

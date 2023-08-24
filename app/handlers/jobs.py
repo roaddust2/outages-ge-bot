@@ -66,7 +66,7 @@ async def notify(bot: Bot):  # noqa: C901
                             EMOJIS_MAP[":droplet:"] if type == "water" else EMOJIS_MAP[":bulb:"],
                             outage.get("date"),
                             outage.get("en_title"),
-                            format_info(en_info)
+                            format_info(en_info, street)
                         ),
                         reply_markup=make_main_keyboard()
                     )
