@@ -8,3 +8,4 @@ Dockerfile
 coverage.xml
 .pytest_cache/
 .vscode/
+tests/
