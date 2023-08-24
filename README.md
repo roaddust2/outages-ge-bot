@@ -55,7 +55,7 @@ It is an app written in Python with the aiogram framework. This bot will assist 
   docker compose up 
   ```
 
-## Installation (With Poetry)
+## Installation (with Poetry)
 ### Variables
 
   ```.env
