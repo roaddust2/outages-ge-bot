@@ -23,6 +23,15 @@ EMOJIS_MAP = {
 }
 
 
+def format_info(info: str, street: str) -> str:
+    """Highlight street with bold style"""
+
+    if street in info:
+        return info.replace(street, f"<b>{street}</b>")
+    else:
+        return info
+
+
 async def notify(bot: Bot):  # noqa: C901
 
     outages = []
@@ -57,7 +66,7 @@ async def notify(bot: Bot):  # noqa: C901
                             EMOJIS_MAP[":droplet:"] if type == "water" else EMOJIS_MAP[":bulb:"],
                             outage.get("date"),
                             outage.get("en_title"),
-                            en_info
+                            format_info(en_info)
                         ),
                         reply_markup=make_main_keyboard()
                     )
