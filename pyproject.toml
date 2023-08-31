@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "outages-ge-bot"
-version = "0.1.0"
+version = "0.1.1"
 description = "Stay tuned with nearest outages in Georgia with this Telegram bot"
 authors = ["roaddust2 <roaddust2@yahoo.com>"]
 license = "GPL-3.0-only"
