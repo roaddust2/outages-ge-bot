@@ -18,12 +18,3 @@ class Chat(Base):
     tg_chat_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
     addresses: Mapped[List["Address"]] = relationship("Address", cascade="all, delete")
     sent_outages: Mapped[List["SentOutage"]] = relationship("SentOutage", cascade="all, delete")
-
-
-def default_full_address(context) -> str:
-    """
-    Context sensetive default function for full_address field
-    """
-    street = context.get_current_parameters().get("street")
-    city = context.get_current_parameters().get("city")
-    return f"{street}, {city.capitalize()}"

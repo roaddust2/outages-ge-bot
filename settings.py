@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from deep_translator import GoogleTranslator
 
 

@@ -10,6 +10,8 @@ from app.db.functions import (
     delete_sent_outages
 )
 
+from settings import translator
+
 
 # Job for sending outage notifications to chats
 
@@ -50,14 +52,16 @@ async def notify(bot: Bot, session: AsyncSession):  # noqa: C901
     for outage in outages:
         type = outage.get("type")
         emergency = outage.get("emergency")
-        geo_info = outage.get("geo_info")
-        en_info = outage.get("en_info")
+        info = outage.get("info")
+        en_info = translator.translate(info)
 
         for address in addresses:
             tg_chat_id = address.chat.tg_chat_id
             street = address.street
             date = outage.get("date").strftime("%Y-%m-%d")
-            if street in geo_info or street in en_info:
+            if street in info or street in en_info:
+                title = outage.get("title")
+                en_title = translator.translate(title)
                 try:
                     await insert_sent_outage(tg_chat_id, outage, session)
                     await bot.send_message(
@@ -66,7 +70,7 @@ async def notify(bot: Bot, session: AsyncSession):  # noqa: C901
                             EMOJIS_MAP[":bangbang:"] if emergency else EMOJIS_MAP[":no_entry:"],
                             EMOJIS_MAP[":droplet:"] if type == "water" else EMOJIS_MAP[":bulb:"],
                             date,
-                            outage.get("en_title"),
+                            en_title,
                             format_info(en_info, street)
                         ),
                         reply_markup=make_main_keyboard()

@@ -3,8 +3,6 @@ from datetime import datetime
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
-from settings import translator  # noqa: F401
-
 
 TYPE = 'electricity'
 ROOT_URL = 'http://www.telasi.ge'
@@ -95,25 +93,19 @@ def parse_notifications_info(notifications: list) -> list:
 
         url = notification.get('link')
         soup = request_soup(url)
-
-        type = notification.get("type")
         date = notification.get('date')
-        geo_title = get_title(soup)
-        en_title = translator.translate(geo_title)
+        type = notification.get("type")
         emergency = notification.get("emergency")
-
-        geo_info = get_info(soup)
-        en_info = translator.translate(geo_info)
+        title = get_title(soup)
+        info = get_info(soup)
 
         notifications_info.append(
             {
                 'date': date,
                 'type': type,
                 'emergency': emergency,
-                'geo_title': geo_title,
-                'en_title': en_title,
-                'geo_info': geo_info,
-                'en_info': en_info,
+                'title': title,
+                'info': info
             }
         )
 

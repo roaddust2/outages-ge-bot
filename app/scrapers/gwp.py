@@ -3,8 +3,6 @@ from datetime import datetime
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
-from settings import translator
-
 
 # GWP provider settings
 # TODO: divide providers into different modules, unify scrapping and parsing
@@ -77,8 +75,7 @@ def parse_notifications_info(notifications: list) -> list:  # noqa: C901
 
         type = notification.get("type")
         date = notification.get('date')
-        geo_title = notification.get('title')
-        en_title = translator.translate(geo_title)
+        title = notification.get('title')
 
         emergency = notification.get("emergency")
 
@@ -87,38 +84,32 @@ def parse_notifications_info(notifications: list) -> list:  # noqa: C901
             outage_text = soup.css.select(".initial > ul > li > p")
             for i in outage_text:
                 if i.get_text(strip=True) != '':
-                    geo_info = i.get_text(strip=True).replace("\xa0", " ")
-                    en_info = translator.translate(geo_info)
+                    info = i.get_text(strip=True).replace("\xa0", " ")
                     notifications_info.append(
                         {
                             'date': date,
                             'type': type,
                             'emergency': emergency,
-                            'geo_title': geo_title,
-                            'en_title': en_title,
-                            'geo_info': geo_info,
-                            'en_info': en_info,
+                            'title': title,
+                            'info': info
                         }
                     )
         # For planned outages
         else:
             outage_text = soup.css.select(".news-details > p")
-            info = []
+            temp = []
             for i in outage_text:
                 if i.get_text(strip=True) != '':
-                    info.append(i.get_text(strip=True).replace("\xa0", " "))
+                    temp.append(i.get_text(strip=True).replace("\xa0", " "))
 
-            geo_info = "".join(info[1:-2])
-            en_info = translator.translate(geo_info)
+            info = "".join(temp[1:-2])
             notifications_info.append(
                 {
                     'date': date,
                     'type': type,
                     'emergency': emergency,
-                    'geo_title': geo_title,
-                    'en_title': en_title,
-                    'geo_info': geo_info,
-                    'en_info': en_info,
+                    'title': title,
+                    'info': info
                 }
             )
 

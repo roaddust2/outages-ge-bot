@@ -168,9 +168,8 @@ async def insert_sent_outage(tg_chat_id: str, outage: dict, session: AsyncSessio
                         date=outage.get("date"),
                         type=outage.get("type"),
                         emergency=outage.get("emergency"),
-                        geo_title=outage.get("geo_title"),
-                        en_title=outage.get("en_title"),
-                        geo_info=outage.get("en_info"),
+                        title=outage.get("title"),
+                        info=outage.get("info")
                     )
                 )
                 await session.commit()
