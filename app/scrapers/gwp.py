@@ -47,16 +47,15 @@ def scrap_notifications() -> list:
         outages_blocks = outages_table.find_all('tr')
 
         for item in outages_blocks:
-            date_obj = datetime.strptime(item.find("span", {"style": "color:#f00000"}).text, "%d/%m/%Y")
+            date = datetime.strptime(item.find("span", {"style": "color:#f00000"}).text, "%d/%m/%Y")
 
-            if date_obj >= datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
-                date_str = date_obj.strftime("%Y-%m-%d")
+            if date >= datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
                 title = item.find_all("a")[1].get_text(strip=True)
                 link = urljoin(ROOT_URL, item.a.get("href"))
                 notifications.append(
                     {
                         "type": TYPE,
-                        "date": date_str,
+                        "date": date,
                         "title": title,
                         "emergency": emergency,
                         "link": link,

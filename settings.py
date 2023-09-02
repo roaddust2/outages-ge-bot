@@ -22,6 +22,7 @@ DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT')
 
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL_ASYNC = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
 # APScheduler settings
@@ -31,7 +32,6 @@ TIMEZONE = "Asia/Tbilisi"
 
 jobstores = {
     'default': MemoryJobStore(),
-    'sqlalchemy': SQLAlchemyJobStore(url=DATABASE_URL)
 }
 
 

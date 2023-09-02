@@ -2,7 +2,7 @@ from aiogram import Bot
 from app.keyboards.main_kb import make_main_keyboard
 import app.scrapers.gwp as GWP
 import app.scrapers.telasi as TELASI
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.functions import (
     OutageAlreadySent,
     insert_sent_outage,
@@ -32,7 +32,7 @@ def format_info(info: str, street: str) -> str:
         return info
 
 
-async def notify(bot: Bot):  # noqa: C901
+async def notify(bot: Bot, session: AsyncSession):  # noqa: C901
 
     outages = []
 
@@ -42,7 +42,7 @@ async def notify(bot: Bot):  # noqa: C901
     outages.extend(gwp_outages)
     outages.extend(telasi_outages)
 
-    addresses = select_addresses()
+    addresses = await select_addresses(session)
 
     if not outages:
         pass
@@ -56,15 +56,16 @@ async def notify(bot: Bot):  # noqa: C901
         for address in addresses:
             tg_chat_id = address.chat.tg_chat_id
             street = address.street
+            date = outage.get("date").strftime("%Y-%m-%d")
             if street in geo_info or street in en_info:
                 try:
-                    insert_sent_outage(tg_chat_id, outage)
+                    await insert_sent_outage(tg_chat_id, outage, session)
                     await bot.send_message(
                         chat_id=tg_chat_id,
                         text=OUTAGE_MESSAGE.format(
                             EMOJIS_MAP[":bangbang:"] if emergency else EMOJIS_MAP[":no_entry:"],
                             EMOJIS_MAP[":droplet:"] if type == "water" else EMOJIS_MAP[":bulb:"],
-                            outage.get("date"),
+                            date,
                             outage.get("en_title"),
                             format_info(en_info, street)
                         ),
@@ -76,6 +77,6 @@ async def notify(bot: Bot):  # noqa: C901
 
 # Job for cleaning db from outdated sent notifications
 
-async def clean_sent_outages():
+async def clean_sent_outages(session: AsyncSession):
 
-    await delete_sent_outages()
+    await delete_sent_outages(session)

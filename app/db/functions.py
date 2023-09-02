@@ -1,51 +1,54 @@
 import logging
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
-from app.db.models import Chat, Address, SentOutage
-from settings import DATABASE_URL
-
-engine = create_engine(DATABASE_URL)
+from app.db.chat import Chat
+from app.db.address import Address
+from app.db.sentoutage import SentOutage
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from app.db.exceptions import (
+    AddressesNumExceeded,
+    AddressAlreadyExists,
+    OutageAlreadySent
+)
 
 
 # Functions that operating with Chat instances
 # Inserting and removing chats from database
 
-def insert_chat(tg_chat_id: str):
+async def insert_chat(tg_chat_id: str, session: AsyncSession) -> bool:
     """Insert new chat into database"""
 
-    with Session(engine) as session:
-        session.begin()
-        try:
-            session.add(Chat(tg_chat_id=tg_chat_id,))
-            session.commit()
-            logging.info(f'New chat ({tg_chat_id}) was inserted to database.')
-            return True
-        except IntegrityError:
-            session.rollback()
-            logging.info(f'Chat ({tg_chat_id}) wasn\'t inserted, it already exists.')
-            return False
+    try:
+        session.add(Chat(tg_chat_id=tg_chat_id))
+        await session.commit()
+        logging.info(f'New chat ({tg_chat_id}) was inserted to database.')
+        return True
+    except IntegrityError:
+        await session.rollback()
+        logging.info(f'Chat ({tg_chat_id}) wasn\'t inserted, it already exists.')
+        return False
 
 
-def delete_chat(tg_chat_id: str):
+async def delete_chat(tg_chat_id: str, session: AsyncSession) -> bool | None:
     """Delete chat from database"""
 
-    with Session(engine) as session:
-        session.begin()
-        try:
-            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
-            if chat:
-                session.delete(chat)
-                session.commit()
-                logging.info(f'Chat ({tg_chat_id}) was deleted from database.')
-                return True
-            else:
-                logging.info(f'Chat ({tg_chat_id}) was not found.')
-                return False
-        except Exception as err:
-            logging.error(f'Chat ({tg_chat_id}) wasn\'t deleted, {err}')
-            return None
+    try:
+        stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id)
+        query = await session.execute(stmt)
+        chat = query.scalar_one_or_none()
+        if chat:
+            await session.delete(chat)
+            await session.commit()
+            logging.info(f'Chat ({tg_chat_id}) was deleted from database.')
+            return True
+        else:
+            logging.info(f'Chat ({tg_chat_id}) was not found.')
+            return False
+    except Exception as err:
+        logging.error(f'Chat ({tg_chat_id}) wasn\'t deleted, {err}')
+        return None
 
 
 # Functions that operating with Addresses instances
@@ -54,150 +57,143 @@ def delete_chat(tg_chat_id: str):
 MAX_ADDRESSES_PER_CHAT = 2
 
 
-class AddressesNumExceeded(Exception):
-    """Raises when user try to add more addresses than allowed"""
-    pass
-
-
-class AddressAlreadyExists(Exception):
-    """Raises when user try to add existing address"""
-    pass
-
-
-def is_address_num_exceeded(tg_chat_id: str):
+async def is_address_num_exceeded(tg_chat_id: str, session: AsyncSession):
     """
     Check if address num count for specific chat exceeded
     if fails raises AddressesNumExceeded
     """
 
-    with Session(engine) as session:
-        session.begin()
-        chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
-        chat_adresses_count = session.query(Address.id).filter_by(chat_id=chat.id).count()
-        if chat_adresses_count >= MAX_ADDRESSES_PER_CHAT:
-            raise AddressesNumExceeded(f"Number of addresses exceeded for chat ({tg_chat_id}).")
-        pass
+    stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id).options(selectinload(Chat.addresses))
+    query = await session.execute(stmt)
+    chat = query.scalar_one_or_none()
+    chat_addresses_count = len(chat.addresses)
+    if chat_addresses_count >= MAX_ADDRESSES_PER_CHAT:
+        raise AddressesNumExceeded(f"Number of addresses exceeded for chat ({tg_chat_id}).")
+    pass
 
 
-def insert_address(tg_chat_id: str, address: dict):
+async def insert_address(tg_chat_id: str, address: dict, session: AsyncSession) -> bool | None:
     """Insert new address into database"""
 
     city = address.get('city').lower()
     street = address.get('street')
 
-    with Session(engine) as session:
-        session.begin()
-        try:
-            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
-            session.add(
-                Address(
-                    chat_id=chat.id,
-                    city=city,
-                    street=street,))
-            session.commit()
-            logging.info(f"New address ({street, city}) inserted for chat ({tg_chat_id}).")
-            return True
-        except IntegrityError:
-            session.rollback()
-            logging.info(f"Address ({street, city}) already exists for chat ({tg_chat_id}).")
-            raise AddressAlreadyExists
-        except Exception as err:
-            session.rollback()
-            logging.error(f'Address for chat ({tg_chat_id}) wasn\'t inserted, {err}')
-            return None
+    try:
+        stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id)
+        query = await session.execute(stmt)
+        chat = query.scalar_one_or_none()
+        session.add(
+            Address(
+                chat_id=chat.id,
+                city=city,
+                street=street,))
+        await session.commit()
+        logging.info(f"New address ({street, city}) inserted for chat ({tg_chat_id}).")
+        return True
+    except IntegrityError:
+        await session.rollback()
+        logging.info(f"Address ({street, city}) already exists for chat ({tg_chat_id}).")
+        raise AddressAlreadyExists
+    except Exception as err:
+        await session.rollback()
+        logging.error(f'Address for chat ({tg_chat_id}) wasn\'t inserted, {err}')
+        return None
 
 
-def select_addresses():
+async def select_addresses(session: AsyncSession) -> list | None:
     """Select all addresses from database"""
+    async with session() as session:
+        async with session.begin():
+            try:
+                stmt = select(Address)
+                query = await session.execute(stmt)
+                addresses = query.scalars().all()
+                return addresses
+            except Exception as err:
+                logging.error(f'Couldn\'t select addresses, {err}')
+                return None
 
-    with Session(engine) as session:
-        session.begin()
-        try:
-            addresses = session.query(Address).all()
-            return addresses
-        except Exception as err:
-            logging.error(f'Couldn\'t select addresses, {err}')
-            return None
 
-
-def select_full_addresses(tg_chat_id: str):
+async def select_full_addresses(tg_chat_id: str, session: AsyncSession) -> set | None:
     """Select all full addresses from database based on chat id"""
 
-    with Session(engine) as session:
-        session.begin()
-        try:
-            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
-            addresses = session.query(Address).filter_by(chat_id=chat.id).all()
-            result = set()
-            for address in addresses:
-                result.add(address.full_address)
-            return result
-        except Exception as err:
-            logging.error(f'Couldn\'t select full addresses, {err}')
-            return None
+    try:
+        stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id).options(selectinload(Chat.addresses))
+        query = await session.execute(stmt)
+        chat = query.scalar_one_or_none()
+        result = set()
+        for address in chat.addresses:
+            result.add(address.full_address)
+        return result
+    except Exception as err:
+        logging.error(f'Couldn\'t select full addresses, {err}')
+        return None
 
 
-def delete_address(tg_chat_id: str, full_address: str):
+async def delete_address(tg_chat_id: str, full_address: str, session: AsyncSession) -> bool | None:
     """Delete address filtered by chat id and full_address field"""
 
-    with Session(engine) as session:
-        session.begin()
-        try:
-            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
-            address = session.query(Address).filter_by(chat_id=chat.id, full_address=full_address).first()
-            session.delete(address)
-            session.commit()
-            logging.info(f"Address ({full_address}) for chat ({tg_chat_id}) has been successfully deleted.")
-            return True
-        except Exception as err:
-            logging.error(f'Address for chat ({tg_chat_id}) wasn\'t deleted, {err}')
-            return None
+    try:
+        stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id)
+        query = await session.execute(stmt)
+        chat = query.scalar_one_or_none()
+
+        delete_stmt = delete(Address).where(
+            (Address.chat_id == chat.id) & (Address.full_address == full_address)
+        )
+        await session.execute(delete_stmt)
+        await session.commit()
+        logging.info(f"Address ({full_address}) for chat ({tg_chat_id}) has been successfully deleted.")
+        return True
+    except Exception as err:
+        logging.error(f'Address for chat ({tg_chat_id}) wasn\'t deleted, {err}')
+        return None
 
 
 # Functions that operating with SentOutage instances
 
-class OutageAlreadySent(Exception):
-    """Raises when user try to add existing address"""
-    pass
 
-
-def insert_sent_outage(tg_chat_id: str, outage: dict):
+async def insert_sent_outage(tg_chat_id: str, outage: dict, session: AsyncSession):
     """Insert outage assosiated with specific chat"""
+    async with session() as session:
+        async with session.begin():
 
-    with Session(engine) as session:
-        session.begin()
-        try:
-            chat = session.query(Chat).filter_by(tg_chat_id=tg_chat_id).first()
-            session.add(
-                SentOutage(
-                    chat_id=chat.id,
-                    date=outage.get("date"),
-                    type=outage.get("type"),
-                    emergency=outage.get("emergency"),
-                    geo_title=outage.get("geo_title"),
-                    en_title=outage.get("en_title"),
-                    geo_info=outage.get("en_info"),
+            try:
+                stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id)
+                query = await session.execute(stmt)
+                chat = query.scalar_one_or_none()
+                session.add(
+                    SentOutage(
+                        chat_id=chat.id,
+                        date=outage.get("date"),
+                        type=outage.get("type"),
+                        emergency=outage.get("emergency"),
+                        geo_title=outage.get("geo_title"),
+                        en_title=outage.get("en_title"),
+                        geo_info=outage.get("en_info"),
+                    )
                 )
-            )
-            session.commit()
-            logging.info(f"SentOutage ({outage}) inserted for chat ({tg_chat_id}).")
-        except IntegrityError:
-            session.rollback()
-            logging.info(f"SentOutage ({outage}) already exists for chat ({tg_chat_id}).")
-            raise OutageAlreadySent
+                await session.commit()
+                logging.info(f"SentOutage ({outage}) inserted for chat ({tg_chat_id}).")
+            except IntegrityError:
+                await session.rollback()
+                logging.info(f"SentOutage ({outage}) already exists for chat ({tg_chat_id}).")
+                raise OutageAlreadySent
 
 
-def delete_sent_outages():
+async def delete_sent_outages(session: AsyncSession):
     """Delete outdated sent outages"""
 
     one_week_before = datetime.now() - timedelta(days=7)
 
-    with Session(engine) as session:
-        session.begin()
-        try:
-            sent_outages = session.query(SentOutage).filter(SentOutage.date < one_week_before).all()
-            for row in sent_outages:
-                session.delete(row)
-            session.commit()
-        except Exception as err:
-            logging.error(f"Couldn't delete outdated sent outages, {err}")
+    async with session() as session:
+        async with session.begin():
+            try:
+                stmt = select(SentOutage).where(SentOutage.date < one_week_before)
+                query = await session.execute(stmt)
+                sent_outages = query.scalars().all()
+                for row in sent_outages:
+                    await session.delete(row)
+                await session.commit()
+            except Exception as err:
+                logging.error(f"Couldn't delete outdated sent outages, {err}")

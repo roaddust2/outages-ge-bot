@@ -35,6 +35,11 @@ def request_soup(url: str) -> BeautifulSoup:
     return soup
 
 
+def normalize_date(date: str) -> str:
+    normalized = date[0:10].replace(" ", ".")
+    return normalized
+
+
 def get_title(soup):
     strong_tags = soup.css.select(".field-item > h3 > strong")
     if strong_tags:
@@ -63,16 +68,15 @@ def scrap_notifications() -> list:
 
     for outage in outages_blocks:
         outage_string = outage.string.strip()
-        date_obj = datetime.strptime(outage_string[0:10], "%d.%m.%Y")
+        date = datetime.strptime(normalize_date(outage_string), "%d.%m.%Y")
         current_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        if date_obj >= current_date:
-            date_str = date_obj.strftime("%Y-%m-%d")
+        if date >= current_date:
             title = outage_string[13:]
             link = urljoin(ROOT_URL, outage.get("href"))
             notifications.append(
                 {
                     "type": TYPE,
-                    "date": date_str,
+                    "date": date,
                     "title": title,
                     "emergency": True if "არაგეგმიური" in title else False,
                     "link": link,

@@ -9,7 +9,8 @@ It is an app written in Python with the aiogram framework. This bot will assist 
 
 ## Stack
 - Python 3.11
-- Aiogram 3.0.0rc1
+- Aiogram 3.0.0rc2
+- SQLAlchemy ORM (asyncio) 2.0
 
 ## Roadmap
 ### 0.1.x
@@ -23,6 +24,8 @@ It is an app written in Python with the aiogram framework. This bot will assist 
 - [ ] \(Optional) Mobile providers support [Magti, Silknet etc.]
 ### 0.3.x
 - [ ] Manage subscriptions to specific providers (on/off) through dialog
+### 1.0.x
+- [ ] Localization (English, Georgian, Russian)
 
 ## Installation (with Docker)
 ### Variables
