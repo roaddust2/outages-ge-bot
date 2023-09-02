@@ -93,7 +93,7 @@ async def is_address_num_exceeded(tg_chat_id: str, session: AsyncSession) -> Non
     chat = query.scalar_one_or_none()
     chat_addresses_count = len(chat.addresses)
     if chat_addresses_count >= MAX_ADDRESSES_PER_CHAT:
-        raise AddressesNumExceeded(f"Number of addresses exceeded for chat ({tg_chat_id}).")
+        raise AddressesNumExceeded(f"Number of addresses exceeded for chat: {tg_chat_id}.")
     pass
 
 
@@ -111,15 +111,15 @@ async def insert_address(tg_chat_id: str, address: dict, session: AsyncSession) 
                 city=city,
                 street=street,))
         await session.commit()
-        logging.info(f"New address ({street, city}) inserted for chat ({tg_chat_id}).")
+        logging.info(f"New address: {street, city} was inserted for chat - {tg_chat_id}.")
         return True
     except IntegrityError:
         await session.rollback()
-        logging.info(f"Address ({street, city}) already exists for chat ({tg_chat_id}).")
+        logging.info(f"Address {street, city} already exists for chat - {tg_chat_id}.")
         raise AddressAlreadyExists
     except Exception as err:
         await session.rollback()
-        logging.error(f'Address for chat ({tg_chat_id}) wasn\'t inserted, {err}')
+        logging.error(f'Address for chat - {tg_chat_id}) wasn\'t inserted, {err}')
         return None
 
 
@@ -164,10 +164,10 @@ async def delete_address(tg_chat_id: str, full_address: str, session: AsyncSessi
         )
         await session.execute(delete_stmt)
         await session.commit()
-        logging.info(f"Address ({full_address}) for chat ({tg_chat_id}) has been successfully deleted.")
+        logging.info(f"Address {full_address} for chat - {tg_chat_id} has been successfully deleted.")
         return True
     except Exception as err:
-        logging.error(f'Address for chat ({tg_chat_id}) wasn\'t deleted, {err}')
+        logging.error(f'Address for chat - {tg_chat_id} wasn\'t deleted, {err}')
         return None
 
 
@@ -182,22 +182,22 @@ async def insert_sent_outage(tg_chat_id: str, outage: dict, session: AsyncSessio
 
             try:
                 chat = await select_chat(tg_chat_id, session)
-                session.add(
-                    SentOutage(
-                        chat_id=chat.id,
-                        date=outage.get("date"),
-                        type=outage.get("type"),
-                        emergency=outage.get("emergency"),
-                        title=outage.get("title"),
-                        info=outage.get("info")
-                    )
+                outage_obj = SentOutage(
+                    chat_id=chat.id,
+                    date=outage.get("date"),
+                    type=outage.get("type"),
+                    emergency=outage.get("emergency"),
+                    title=outage.get("title"),
+                    info=outage.get("info")
                 )
+                session.add(outage_obj)
                 await session.commit()
-                logging.info(f"SentOutage ({outage}) inserted for chat ({tg_chat_id}).")
+                await session.refresh(outage_obj)
+                logging.info(f"Outage with id: {outage_obj.id} was inserted for chat - {tg_chat_id}.")
                 return True
             except IntegrityError:
                 await session.rollback()
-                logging.info(f"SentOutage ({outage}) already exists for chat ({tg_chat_id}).")
+                logging.info(f"Outage already exists for chat - {tg_chat_id}.")
                 raise OutageAlreadySent
 
 

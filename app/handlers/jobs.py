@@ -38,8 +38,8 @@ async def notify(bot: Bot, session: AsyncSession):  # noqa: C901
 
     outages = []
 
-    gwp_outages = GWP.collect_outages()
-    telasi_outages = TELASI.collect_outages()
+    gwp_outages = await GWP.collect_outages()
+    telasi_outages = await TELASI.collect_outages()
 
     outages.extend(gwp_outages)
     outages.extend(telasi_outages)

@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 from datetime import datetime
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
@@ -9,27 +9,34 @@ ROOT_URL = 'http://www.telasi.ge'
 URL = urljoin(ROOT_URL, '/ru/power')
 
 
-def collect_outages() -> list:
+async def collect_outages() -> list:
     """Wrapper"""
 
-    outages = parse_notifications_info(scrap_notifications())
+    notifications = await scrap_notifications()
+    outages = await parse_notifications_info(notifications)
     return outages
 
 
-def get_localized_url(url: str) -> str:
+async def get_localized_url(url: str) -> str:
     """Get localized url in 'ge' locale"""
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            response_text = await response.text()
+
+    soup = BeautifulSoup(response_text, 'html.parser')
     link = soup.find('a', string="Geo").get("href")
     return urljoin(ROOT_URL, link)
 
 
-def request_soup(url: str) -> BeautifulSoup:
+async def request_soup(url: str) -> BeautifulSoup:
     """Returns soup from given url"""
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            response_text = await response.text()
+
+    soup = BeautifulSoup(response_text, 'html.parser')
     return soup
 
 
@@ -58,13 +65,13 @@ def get_info(soup):
     return ""
 
 
-def scrap_notifications() -> list:
+async def scrap_notifications() -> list:
     """Scraps notifications from webpage"""
 
     notifications = []
 
-    url = get_localized_url(URL)
-    soup = request_soup(url)
+    url = await get_localized_url(URL)
+    soup = await request_soup(url)
     outages_blocks = soup.css.select(".power-submenu > ul > li > a")
 
     for outage in outages_blocks:
@@ -87,7 +94,7 @@ def scrap_notifications() -> list:
     return notifications
 
 
-def parse_notifications_info(notifications: list) -> list:
+async def parse_notifications_info(notifications: list) -> list:
     """Parses info from notifications"""
 
     notifications_info = []
@@ -95,7 +102,7 @@ def parse_notifications_info(notifications: list) -> list:
     for notification in notifications:
 
         url = notification.get('link')
-        soup = request_soup(url)
+        soup = await request_soup(url)
         date = notification.get('date')
         type = notification.get("type")
         emergency = notification.get("emergency")

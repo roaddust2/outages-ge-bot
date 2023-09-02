@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 from datetime import datetime
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
@@ -17,22 +17,26 @@ URLS = [
 
 # GWP provider scraper and parser
 
-def collect_outages() -> list:
+async def collect_outages() -> list:
     """Wrapper"""
 
-    outages = parse_notifications_info(scrap_notifications())
+    notifications = await scrap_notifications()
+    outages = await parse_notifications_info(notifications)
     return outages
 
 
-def request_soup(url: str) -> BeautifulSoup:
+async def request_soup(url: str) -> BeautifulSoup:
     """Returns soup from given url"""
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            response_text = await response.text()
+
+    soup = BeautifulSoup(response_text, 'html.parser')
     return soup
 
 
-def scrap_notifications() -> list:
+async def scrap_notifications() -> list:
     """Scraps notifications based on their type from webpage"""
 
     notifications = []
@@ -40,7 +44,7 @@ def scrap_notifications() -> list:
     for item in URLS:
         url = item.get("url")
         emergency = item.get("emergency")
-        soup = request_soup(url)
+        soup = await request_soup(url)
         outages_table = soup.find("table", {"class": "samushaoebi"})
         outages_blocks = outages_table.find_all('tr')
 
@@ -63,7 +67,7 @@ def scrap_notifications() -> list:
     return notifications
 
 
-def parse_notifications_info(notifications: list) -> list:  # noqa: C901
+async def parse_notifications_info(notifications: list) -> list:  # noqa: C901
     """Parses info from notifications"""
 
     notifications_info = []
@@ -71,7 +75,7 @@ def parse_notifications_info(notifications: list) -> list:  # noqa: C901
     for notification in notifications:
 
         url = notification.get('link')
-        soup = request_soup(url)
+        soup = await request_soup(url)
 
         type = notification.get("type")
         date = notification.get('date')
