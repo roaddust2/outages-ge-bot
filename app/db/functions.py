@@ -1,4 +1,5 @@
 import logging
+from typing import List
 from datetime import datetime, timedelta
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
@@ -15,40 +16,64 @@ from app.db.exceptions import (
 
 
 # Functions that operating with Chat instances
-# Inserting and removing chats from database
+# Selecting, inserting and removing chats from database
 
-async def insert_chat(tg_chat_id: str, session: AsyncSession) -> bool:
-    """Insert new chat into database"""
+async def select_chat(tg_chat_id: str, session: AsyncSession) -> Chat:
+    """Select chat"""
 
-    try:
-        session.add(Chat(tg_chat_id=tg_chat_id))
-        await session.commit()
-        logging.info(f'New chat ({tg_chat_id}) was inserted to database.')
-        return True
-    except IntegrityError:
-        await session.rollback()
-        logging.info(f'Chat ({tg_chat_id}) wasn\'t inserted, it already exists.')
-        return False
+    query = await session.execute(
+        select(Chat).where(Chat.tg_chat_id == tg_chat_id)
+    )
+    chat = query.scalar_one_or_none()
+    return chat
 
 
-async def delete_chat(tg_chat_id: str, session: AsyncSession) -> bool | None:
-    """Delete chat from database"""
+async def insert_chats(chat_ids: List[str], session: AsyncSession) -> bool | None:
+    """Insert or activate chats"""
 
-    try:
-        stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id)
-        query = await session.execute(stmt)
-        chat = query.scalar_one_or_none()
+    result_ids = []
+
+    for id in chat_ids:
+        chat = await select_chat(id, session)
         if chat:
-            await session.delete(chat)
-            await session.commit()
-            logging.info(f'Chat ({tg_chat_id}) was deleted from database.')
-            return True
+            chat.state = Chat.State.active.value
         else:
-            logging.info(f'Chat ({tg_chat_id}) was not found.')
-            return False
-    except Exception as err:
-        logging.error(f'Chat ({tg_chat_id}) wasn\'t deleted, {err}')
-        return None
+            session.add(Chat(tg_chat_id=id))
+        result_ids.append(id)
+
+    if result_ids:
+        try:
+            await session.commit()
+            logging.info(f"Total chats were activated: {len(result_ids)}. Chat ids: {result_ids}.")
+            return True
+        except Exception as err:
+            await session.rollback()
+            logging.error(f"Total chats were activated: 0. Error occured: {err}")
+            return None
+
+
+async def delete_chats(chat_ids: List[str], session: AsyncSession) -> bool | None:
+    """Inactivate chats"""
+
+    result_ids = []
+
+    for id in chat_ids:
+        chat = await select_chat(id, session)
+        if chat:
+            chat.state = Chat.State.inactive.value
+        else:
+            logging.info(f"Chat {id} was not found.")
+        result_ids.append(id)
+
+    if result_ids:
+        try:
+            await session.commit()
+            logging.info(f"Total chats were inactivated: {len(result_ids)}. Chat ids: {result_ids}.")
+            return True
+        except Exception as err:
+            await session.rollback()
+            logging.error(f"Total chats were inactivated: 0. Error occured: {err}")
+            return None
 
 
 # Functions that operating with Addresses instances
@@ -57,7 +82,7 @@ async def delete_chat(tg_chat_id: str, session: AsyncSession) -> bool | None:
 MAX_ADDRESSES_PER_CHAT = 2
 
 
-async def is_address_num_exceeded(tg_chat_id: str, session: AsyncSession):
+async def is_address_num_exceeded(tg_chat_id: str, session: AsyncSession) -> None:
     """
     Check if address num count for specific chat exceeded
     if fails raises AddressesNumExceeded
@@ -79,9 +104,7 @@ async def insert_address(tg_chat_id: str, address: dict, session: AsyncSession) 
     street = address.get('street')
 
     try:
-        stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id)
-        query = await session.execute(stmt)
-        chat = query.scalar_one_or_none()
+        chat = await select_chat(tg_chat_id, session)
         session.add(
             Address(
                 chat_id=chat.id,
@@ -102,10 +125,11 @@ async def insert_address(tg_chat_id: str, address: dict, session: AsyncSession) 
 
 async def select_addresses(session: AsyncSession) -> list | None:
     """Select all addresses from database"""
+
     async with session() as session:
         async with session.begin():
             try:
-                stmt = select(Address)
+                stmt = select(Address).join(Address.chat).where(Chat.state == Chat.State.active.value)
                 query = await session.execute(stmt)
                 addresses = query.scalars().all()
                 return addresses
@@ -134,10 +158,7 @@ async def delete_address(tg_chat_id: str, full_address: str, session: AsyncSessi
     """Delete address filtered by chat id and full_address field"""
 
     try:
-        stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id)
-        query = await session.execute(stmt)
-        chat = query.scalar_one_or_none()
-
+        chat = await select_chat(tg_chat_id, session)
         delete_stmt = delete(Address).where(
             (Address.chat_id == chat.id) & (Address.full_address == full_address)
         )
@@ -153,15 +174,14 @@ async def delete_address(tg_chat_id: str, full_address: str, session: AsyncSessi
 # Functions that operating with SentOutage instances
 
 
-async def insert_sent_outage(tg_chat_id: str, outage: dict, session: AsyncSession):
+async def insert_sent_outage(tg_chat_id: str, outage: dict, session: AsyncSession) -> bool:
     """Insert outage assosiated with specific chat"""
+
     async with session() as session:
         async with session.begin():
 
             try:
-                stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id)
-                query = await session.execute(stmt)
-                chat = query.scalar_one_or_none()
+                chat = await select_chat(tg_chat_id, session)
                 session.add(
                     SentOutage(
                         chat_id=chat.id,
@@ -174,13 +194,14 @@ async def insert_sent_outage(tg_chat_id: str, outage: dict, session: AsyncSessio
                 )
                 await session.commit()
                 logging.info(f"SentOutage ({outage}) inserted for chat ({tg_chat_id}).")
+                return True
             except IntegrityError:
                 await session.rollback()
                 logging.info(f"SentOutage ({outage}) already exists for chat ({tg_chat_id}).")
                 raise OutageAlreadySent
 
 
-async def delete_sent_outages(session: AsyncSession):
+async def delete_sent_outages(session: AsyncSession) -> bool | None:
     """Delete outdated sent outages"""
 
     one_week_before = datetime.now() - timedelta(days=7)
@@ -194,5 +215,7 @@ async def delete_sent_outages(session: AsyncSession):
                 for row in sent_outages:
                     await session.delete(row)
                 await session.commit()
+                return True
             except Exception as err:
                 logging.error(f"Couldn't delete outdated sent outages, {err}")
+                return None

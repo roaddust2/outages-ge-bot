@@ -3,7 +3,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ChatMemberUpdated
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.functions import insert_chat, delete_chat
+from app.db.functions import insert_chats, delete_chats
 from app.keyboards.main_kb import make_main_keyboard
 from aiogram.filters.chat_member_updated import (
     ChatMemberUpdatedFilter,
@@ -18,12 +18,12 @@ router.message.filter(F.chat.type == "private")
 
 @router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=KICKED))
 async def blocked(event: ChatMemberUpdated, session: AsyncSession):
-    await delete_chat(event.chat.id, session)
+    await delete_chats([event.chat.id], session)
 
 
 @router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=MEMBER))
 async def started(event: ChatMemberUpdated, session: AsyncSession):
-    await insert_chat(event.chat.id, session)
+    await insert_chats([event.chat.id], session)
 
 
 @router.message(CommandStart())

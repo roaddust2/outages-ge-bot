@@ -44,7 +44,10 @@ def get_title(soup):
         title = [strong.get_text(strip=True).replace("\xa0", " ") for strong in strong_tags]
         return ' '.join(title)
     p_tag = soup.css.select_one(".field-item > p[align=\"center\"]")
-    return p_tag.get_text(strip=True).replace("\xa0", " ")
+    if p_tag:
+        return p_tag.get_text(strip=True).replace("\xa0", " ")
+    else:
+        return ""
 
 
 def get_info(soup):
