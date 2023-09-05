@@ -34,6 +34,9 @@ start:
 
 # Main commands (Docker)
 
+compose-down:
+	docker compose down
+
 compose-build:
 	docker compose build
 

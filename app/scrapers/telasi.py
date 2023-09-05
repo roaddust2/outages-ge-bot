@@ -1,116 +1,101 @@
-import requests
+import aiohttp
 from datetime import datetime
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
-
-from settings import translator  # noqa: F401
-
-
-TYPE = 'electricity'
-ROOT_URL = 'http://www.telasi.ge'
-URL = urljoin(ROOT_URL, '/ru/power')
+from app.scrapers.base import AbstractProvider
 
 
-def collect_outages() -> list:
-    """Wrapper"""
+class Telasi(AbstractProvider):
+    """Telasi electricity provider class"""
 
-    outages = parse_notifications_info(scrap_notifications())
-    return outages
+    TYPE = 'electricity'
+    ROOT_URL = 'http://www.telasi.ge'
+    URL = urljoin(ROOT_URL, '/ru/power')
 
+    async def get_localized_url(self, url: str) -> str:
+        """Get localized url in 'ge' locale"""
 
-def get_localized_url(url: str) -> str:
-    """Get localized url in 'ge' locale"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response_text = await response.text()
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    link = soup.find('a', string="Geo").get("href")
-    return urljoin(ROOT_URL, link)
+        soup = BeautifulSoup(response_text, 'html.parser')
+        link = soup.find('a', string="Geo").get("href")
+        return urljoin(self.ROOT_URL, link)
 
+    def normalize_date(self, date: str) -> str:
+        normalized = date[0:10].replace(" ", ".")
+        return normalized
 
-def request_soup(url: str) -> BeautifulSoup:
-    """Returns soup from given url"""
+    def get_title(self, soup: BeautifulSoup) -> str:
+        strong_tags = soup.css.select(".field-item > h3 > strong")
+        if strong_tags:
+            title = [strong.get_text(strip=True).replace("\xa0", " ") for strong in strong_tags]
+            return ' '.join(title)
+        p_tag = soup.css.select_one(".field-item > p[align=\"center\"]")
+        if p_tag:
+            return p_tag.get_text(strip=True).replace("\xa0", " ")
+        else:
+            return ""
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    return soup
+    def get_info(self, soup: BeautifulSoup) -> str:
+        p_tags = soup.css.select(".field-item > p")
+        if p_tags:
+            info = [p.get_text(strip=True).replace("\xa0", " ") for p in p_tags][:-1]
+            return ' '.join(info)
+        return ""
 
+    async def scrap_notifications(self) -> list:
+        """Scraps notifications from webpage"""
 
-def get_title(soup):
-    strong_tags = soup.css.select(".field-item > h3 > strong")
-    if strong_tags:
-        title = [strong.get_text(strip=True).replace("\xa0", " ") for strong in strong_tags]
-        return ' '.join(title)
-    p_tag = soup.css.select_one(".field-item > p[align=\"center\"]")
-    return p_tag.get_text(strip=True).replace("\xa0", " ")
+        notifications = []
 
+        url = await self.get_localized_url(self.URL)
+        soup = await self.request_soup(url)
+        outages_blocks = soup.css.select(".power-submenu > ul > li > a")
 
-def get_info(soup):
-    p_tags = soup.css.select(".field-item > p")
-    if p_tags:
-        info = [p.get_text(strip=True).replace("\xa0", " ") for p in p_tags][:-1]
-        return ' '.join(info)
-    return ""
+        for outage in outages_blocks:
+            outage_string = outage.string.strip()
+            date = datetime.strptime(self.normalize_date(outage_string), "%d.%m.%Y")
+            current_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            if date >= current_date:
+                title = outage_string[13:]
+                link = urljoin(self.ROOT_URL, outage.get("href"))
+                notifications.append(
+                    {
+                        "type": self.TYPE,
+                        "date": date.strftime("%Y-%m-%d"),
+                        "title": title,
+                        "emergency": True if "არაგეგმიური" in title else False,
+                        "link": link,
+                    }
+                )
 
+        return notifications
 
-def scrap_notifications() -> list:
-    """Scraps notifications from webpage"""
+    async def parse_notifications_info(self, notifications: list) -> list:
+        """Parses info from notifications"""
 
-    notifications = []
+        notifications_info = []
 
-    url = get_localized_url(URL)
-    soup = request_soup(url)
-    outages_blocks = soup.css.select(".power-submenu > ul > li > a")
+        for notification in notifications:
 
-    for outage in outages_blocks:
-        outage_string = outage.string.strip()
-        date_obj = datetime.strptime(outage_string[0:10], "%d.%m.%Y")
-        current_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        if date_obj >= current_date:
-            date_str = date_obj.strftime("%Y-%m-%d")
-            title = outage_string[13:]
-            link = urljoin(ROOT_URL, outage.get("href"))
-            notifications.append(
+            url = notification.get('link')
+            soup = await self.request_soup(url)
+            date = notification.get('date')
+            type = notification.get("type")
+            emergency = notification.get("emergency")
+            title = self.get_title(soup)
+            info = self.get_info(soup)
+
+            notifications_info.append(
                 {
-                    "type": TYPE,
-                    "date": date_str,
-                    "title": title,
-                    "emergency": True if "არაგეგმიური" in title else False,
-                    "link": link,
+                    'date': date,
+                    'type': type,
+                    'emergency': emergency,
+                    'title': title,
+                    'info': info
                 }
             )
 
-    return notifications
-
-
-def parse_notifications_info(notifications: list) -> list:
-    """Parses info from notifications"""
-
-    notifications_info = []
-
-    for notification in notifications:
-
-        url = notification.get('link')
-        soup = request_soup(url)
-
-        type = notification.get("type")
-        date = notification.get('date')
-        geo_title = get_title(soup)
-        en_title = translator.translate(geo_title)
-        emergency = notification.get("emergency")
-
-        geo_info = get_info(soup)
-        en_info = translator.translate(geo_info)
-
-        notifications_info.append(
-            {
-                'date': date,
-                'type': type,
-                'emergency': emergency,
-                'geo_title': geo_title,
-                'en_title': en_title,
-                'geo_info': geo_info,
-                'en_info': en_info,
-            }
-        )
-
-    return notifications_info
+        return notifications_info

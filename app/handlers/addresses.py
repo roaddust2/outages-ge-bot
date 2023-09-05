@@ -6,7 +6,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardRemove
 from app.keyboards.basic_kbs import make_row_keyboard, make_col_keyboard
 from app.keyboards.main_kb import make_main_keyboard
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.functions import (
     AddressesNumExceeded,
     AddressAlreadyExists,
@@ -32,9 +32,9 @@ class AddAddress(StatesGroup):
 
 @router.message(Command("add_address"))
 @router.message(F.text.lower() == "add new address")
-async def cmd_add_address(message: Message, state: FSMContext):
+async def cmd_add_address(message: Message, state: FSMContext, session: AsyncSession):
     try:
-        is_address_num_exceeded(message.chat.id)
+        await is_address_num_exceeded(message.chat.id, session)
         await message.answer(
             "<b>1. Choose city:</b>\n\n"
             "<i>You can add up to 2 addresses.</i>",
@@ -69,11 +69,15 @@ async def city_chosen_incorrectly(message: Message):
 
 
 @router.message(AddAddress.entering_street)
-async def street_entered(message: Message, state: FSMContext):
+async def street_entered(message: Message, state: FSMContext, session: AsyncSession):
 
     user_data = await state.get_data()
     try:
-        insert_address(message.chat.id, {"city": user_data['chosen_city'], "street": message.text})
+        await insert_address(
+            message.chat.id,
+            {"city": user_data['chosen_city'], "street": message.text},
+            session,
+        )
         await message.answer(
             f"Your address <b>{message.text}, {user_data['chosen_city']}</b> is saved!\n"
             "Now this bot will notify you as soon as possible if the outage appears, stay tuned!",
@@ -96,8 +100,8 @@ class RemoveAddress(StatesGroup):
 
 @router.message(Command("remove_address"))
 @router.message(F.text.lower() == "remove address")
-async def cmd_remove_address(message: Message, state: FSMContext):
-    addresses = select_full_addresses(message.chat.id)
+async def cmd_remove_address(message: Message, state: FSMContext, session: AsyncSession):
+    addresses = await select_full_addresses(message.chat.id, session)
     if len(addresses) < 1:
         await message.answer(
             "You do not have any saved addresses.\n"
@@ -114,10 +118,10 @@ async def cmd_remove_address(message: Message, state: FSMContext):
 
 
 @router.message(RemoveAddress.choosing_address)
-async def address_chosen(message: Message, state: FSMContext):
-    addresses = select_full_addresses(message.chat.id)
+async def address_chosen(message: Message, state: FSMContext, session: AsyncSession):
+    addresses = await select_full_addresses(message.chat.id, session)
     if message.text in addresses:
-        delete_address(message.chat.id, message.text)
+        await delete_address(message.chat.id, message.text, session)
         await message.answer(
             "Address has been successfully deleted!",
             reply_markup=make_main_keyboard()
@@ -135,8 +139,8 @@ async def address_chosen(message: Message, state: FSMContext):
 
 @router.message(Command("list_addresses"))
 @router.message(F.text.lower() == "my addresses")
-async def cmd_list_addresses(message: Message):
-    addresses = select_full_addresses(message.chat.id)
+async def cmd_list_addresses(message: Message, session: AsyncSession):
+    addresses = await select_full_addresses(message.chat.id, session)
     if len(addresses) < 1:
         await message.answer(
             "You do not have any saved addresses.\n"

@@ -1,16 +1,16 @@
 """First migration
 
-Revision ID: aafa4dc55c83
+Revision ID: 14d6239d3c0a
 Revises: 
-Create Date: 2023-08-09 15:26:50.137552
+Create Date: 2023-09-04 15:04:09.054083
 
 """
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'aafa4dc55c83'
+revision = '14d6239d3c0a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,6 +21,7 @@ def upgrade() -> None:
     op.create_table('chats',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('tg_chat_id', sa.Integer(), nullable=False),
+    sa.Column('state', sa.Integer(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('tg_chat_id')
     )
@@ -29,19 +30,15 @@ def upgrade() -> None:
     sa.Column('chat_id', sa.Integer(), nullable=False),
     sa.Column('city', sa.String(length=255), nullable=True),
     sa.Column('street', sa.String(length=255), nullable=True),
+    sa.Column('full_address', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('chat_id', 'city', 'street', name='chat_id_city_street_uc')
     )
     op.create_table('sent_outages',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('chat_id', sa.Integer(), nullable=False),
-    sa.Column('date', sa.DateTime(), nullable=False),
-    sa.Column('type', sa.String(length=255), nullable=False),
-    sa.Column('emergency', sa.Boolean(), nullable=False),
-    sa.Column('geo_title', sa.String(length=255), nullable=True),
-    sa.Column('en_title', sa.String(length=255), nullable=True),
-    sa.Column('geo_info', sa.Text(), nullable=True),
-    sa.Column('en_info', sa.Text(), nullable=True),
+    sa.Column('outage', postgresql.JSON(astext_type=sa.Text()), nullable=False),
     sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ),
     sa.PrimaryKeyConstraint('id')
     )

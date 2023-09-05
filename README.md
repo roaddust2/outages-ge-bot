@@ -1,5 +1,4 @@
 ![Python](https://img.shields.io/badge/python-v3.11-blue)
-[![Deploy](https://github.com/roaddust2/outages-ge-bot/actions/workflows/deploy.yml/badge.svg)](https://github.com/roaddust2/outages-ge-bot/actions/workflows/deploy.yml)
 [![Maintainability](https://api.codeclimate.com/v1/badges/12af23439b2959845c8e/maintainability)](https://codeclimate.com/github/roaddust2/outages-ge-bot/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/12af23439b2959845c8e/test_coverage)](https://codeclimate.com/github/roaddust2/outages-ge-bot/test_coverage)
 # outages-ge-bot
@@ -9,19 +8,18 @@ It is an app written in Python with the aiogram framework. This bot will assist 
 
 ## Stack
 - Python 3.11
-- Aiogram 3.0.0rc1
+- Aiogram 3.0.0rc2
+- SQLAlchemy ORM (asyncio) 2.0
 
-## Roadmap
-### 0.1.x
+## Goals
 - [x] Basic notifier functionality
 - [x] Ability to save up to 2 addresses
 - [x] Ability to list and remove addresses
 - [x] Tbilisi support [GWP, Telasi]
-### 0.2.x
 - [ ] Batumi support
 - [ ] Kutaisi support
+- [ ] Localization (English, Georgian, Russian)
 - [ ] \(Optional) Mobile providers support [Magti, Silknet etc.]
-### 0.3.x
 - [ ] Manage subscriptions to specific providers (on/off) through dialog
 
 ## Installation (with Docker)

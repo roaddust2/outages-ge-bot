@@ -1,126 +1,100 @@
-import requests
 from datetime import datetime
 from urllib.parse import urljoin
-from bs4 import BeautifulSoup
-
-from settings import translator
+from app.scrapers.base import AbstractProvider
 
 
-# GWP provider settings
-# TODO: divide providers into different modules, unify scrapping and parsing
+# TODO: unify scrapping and parsing
 
-TYPE = 'water'
-ROOT_URL = 'https://www.gwp.ge'
-URLS = [
-    {"url": urljoin(ROOT_URL, '/ka/dagegmili'), "emergency": False},
-    {"url": urljoin(ROOT_URL, '/ka/gadaudebeli'), "emergency": True}
-]
+class GWP(AbstractProvider):
+    """GWP water provider class"""
 
+    TYPE = 'water'
+    ROOT_URL = 'https://www.gwp.ge'
+    URLS = [
+        {"url": urljoin(ROOT_URL, '/ka/dagegmili'), "emergency": False},
+        {"url": urljoin(ROOT_URL, '/ka/gadaudebeli'), "emergency": True}
+    ]
 
-# GWP provider scraper and parser
+    async def scrap_notifications(self) -> list:
+        """Scraps notifications based on their type from webpage"""
 
-def collect_outages() -> list:
-    """Wrapper"""
+        notifications = []
 
-    outages = parse_notifications_info(scrap_notifications())
-    return outages
+        for item in self.URLS:
+            url = item.get("url")
+            emergency = item.get("emergency")
+            soup = await self.request_soup(url)
+            outages_table = soup.find("table", {"class": "samushaoebi"})
+            outages_blocks = outages_table.find_all('tr')
 
+            for item in outages_blocks:
+                date = datetime.strptime(item.find("span", {"style": "color:#f00000"}).text, "%d/%m/%Y")
 
-def request_soup(url: str) -> BeautifulSoup:
-    """Returns soup from given url"""
+                if date >= datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
+                    title = item.find_all("a")[1].get_text(strip=True)
+                    link = urljoin(self.ROOT_URL, item.a.get("href"))
+                    notifications.append(
+                        {
+                            "type": self.TYPE,
+                            "date": date.strftime("%Y-%m-%d"),
+                            "title": title,
+                            "emergency": emergency,
+                            "link": link,
+                        }
+                    )
 
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    return soup
+        return notifications
 
+    async def parse_notifications_info(self, notifications: list) -> list:  # noqa: C901
+        """Parses info from notifications"""
 
-def scrap_notifications() -> list:
-    """Scraps notifications based on their type from webpage"""
+        notifications_info = []
 
-    notifications = []
+        for notification in notifications:
 
-    for item in URLS:
-        url = item.get("url")
-        emergency = item.get("emergency")
-        soup = request_soup(url)
-        outages_table = soup.find("table", {"class": "samushaoebi"})
-        outages_blocks = outages_table.find_all('tr')
+            url = notification.get('link')
+            soup = await self.request_soup(url)
 
-        for item in outages_blocks:
-            date_obj = datetime.strptime(item.find("span", {"style": "color:#f00000"}).text, "%d/%m/%Y")
+            type = notification.get("type")
+            date = notification.get('date')
+            title = notification.get('title')
 
-            if date_obj >= datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
-                date_str = date_obj.strftime("%Y-%m-%d")
-                title = item.find_all("a")[1].get_text(strip=True)
-                link = urljoin(ROOT_URL, item.a.get("href"))
-                notifications.append(
+            emergency = notification.get("emergency")
+
+            # For emergency outages
+
+            if emergency:
+                outage_text = soup.css.select(".initial > ul > li > p")
+                for i in outage_text:
+                    if i.get_text(strip=True) != '':
+                        info = i.get_text(strip=True).replace("\xa0", " ")
+                        notifications_info.append(
+                            {
+                                'date': date,
+                                'type': type,
+                                'emergency': emergency,
+                                'title': title,
+                                'info': info
+                            }
+                        )
+            # For planned outages
+
+            else:
+                outage_text = soup.css.select(".news-details > p")
+                temp = []
+                for i in outage_text:
+                    if i.get_text(strip=True) != '':
+                        temp.append(i.get_text(strip=True).replace("\xa0", " "))
+
+                info = "".join(temp[1:-2])
+                notifications_info.append(
                     {
-                        "type": TYPE,
-                        "date": date_str,
-                        "title": title,
-                        "emergency": emergency,
-                        "link": link,
+                        'date': date,
+                        'type': type,
+                        'emergency': emergency,
+                        'title': title,
+                        'info': info
                     }
                 )
 
-    return notifications
-
-
-def parse_notifications_info(notifications: list) -> list:  # noqa: C901
-    """Parses info from notifications"""
-
-    notifications_info = []
-
-    for notification in notifications:
-
-        url = notification.get('link')
-        soup = request_soup(url)
-
-        type = notification.get("type")
-        date = notification.get('date')
-        geo_title = notification.get('title')
-        en_title = translator.translate(geo_title)
-
-        emergency = notification.get("emergency")
-
-        # For emergency outages
-        if emergency:
-            outage_text = soup.css.select(".initial > ul > li > p")
-            for i in outage_text:
-                if i.get_text(strip=True) != '':
-                    geo_info = i.get_text(strip=True).replace("\xa0", " ")
-                    en_info = translator.translate(geo_info)
-                    notifications_info.append(
-                        {
-                            'date': date,
-                            'type': type,
-                            'emergency': emergency,
-                            'geo_title': geo_title,
-                            'en_title': en_title,
-                            'geo_info': geo_info,
-                            'en_info': en_info,
-                        }
-                    )
-        # For planned outages
-        else:
-            outage_text = soup.css.select(".news-details > p")
-            info = []
-            for i in outage_text:
-                if i.get_text(strip=True) != '':
-                    info.append(i.get_text(strip=True).replace("\xa0", " "))
-
-            geo_info = "".join(info[1:-2])
-            en_info = translator.translate(geo_info)
-            notifications_info.append(
-                {
-                    'date': date,
-                    'type': type,
-                    'emergency': emergency,
-                    'geo_title': geo_title,
-                    'en_title': en_title,
-                    'geo_info': geo_info,
-                    'en_info': en_info,
-                }
-            )
-
-    return notifications_info
+        return notifications_info
