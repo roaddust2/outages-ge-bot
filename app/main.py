@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 async def main():
 
     # Init SQLAlchemy async engine, make AsyncSession
-    engine = create_async_engine(DATABASE_URL_ASYNC, echo=True)
+    engine = create_async_engine(DATABASE_URL_ASYNC, echo=False)
     sessionmaker = async_sessionmaker(engine, expire_on_commit=False)
 
     # Init bot
@@ -43,7 +43,7 @@ async def main():
         notify,
         jobstore='default',
         trigger="interval",
-        minutes=1,
+        minutes=30,
         kwargs={"bot": bot, "session": sessionmaker}
     )
     scheduler.add_job(

@@ -6,8 +6,3 @@ class AddressesNumExceeded(Exception):
 class AddressAlreadyExists(Exception):
     """Raises when user try to add existing address"""
     pass
-
-
-class OutageAlreadySent(Exception):
-    """Raises when user try to add existing address"""
-    pass

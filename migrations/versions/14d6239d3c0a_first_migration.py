@@ -1,16 +1,16 @@
 """First migration
 
-Revision ID: 7ab5f9d543e1
+Revision ID: 14d6239d3c0a
 Revises: 
-Create Date: 2023-09-02 14:36:56.043793
+Create Date: 2023-09-04 15:04:09.054083
 
 """
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '7ab5f9d543e1'
+revision = '14d6239d3c0a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -38,14 +38,9 @@ def upgrade() -> None:
     op.create_table('sent_outages',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('chat_id', sa.Integer(), nullable=False),
-    sa.Column('date', sa.DateTime(), nullable=False),
-    sa.Column('type', sa.String(length=255), nullable=False),
-    sa.Column('emergency', sa.Boolean(), nullable=False),
-    sa.Column('title', sa.String(length=255), nullable=True),
-    sa.Column('info', sa.Text(), nullable=True),
+    sa.Column('outage', postgresql.JSON(astext_type=sa.Text()), nullable=False),
     sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('chat_id', 'date', 'title', 'info', name='chat_id_date_title_info_uc')
+    sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
 
