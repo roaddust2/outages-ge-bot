@@ -102,7 +102,7 @@ class RemoveAddress(StatesGroup):
 @router.message(F.text.lower() == "remove address")
 async def cmd_remove_address(message: Message, state: FSMContext, session: AsyncSession):
     addresses = await select_full_addresses(message.chat.id, session)
-    if len(addresses) < 1:
+    if not addresses:
         await message.answer(
             "You do not have any saved addresses.\n"
             "To add address use <b>\"Add new address\"</b> button "
@@ -141,7 +141,7 @@ async def address_chosen(message: Message, state: FSMContext, session: AsyncSess
 @router.message(F.text.lower() == "my addresses")
 async def cmd_list_addresses(message: Message, session: AsyncSession):
     addresses = await select_full_addresses(message.chat.id, session)
-    if len(addresses) < 1:
+    if not addresses:
         await message.answer(
             "You do not have any saved addresses.\n"
             "To add address use <b>\"Add new address\"</b> button "
