@@ -14,6 +14,9 @@ LABEL name="outages-ge-bot" \
       authors="roaddust2 <roaddust2@yahoo.com>" \
       license="GPL-3.0-only"
 
+ENV TZ=Asia/Tbilisi
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 ENV VIRTUAL_ENV=/opt/venv
 COPY --from=builder $VIRTUAL_ENV $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
