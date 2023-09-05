@@ -12,20 +12,16 @@ It is an app written in Python with the aiogram framework. This bot will assist 
 - Aiogram 3.0.0rc2
 - SQLAlchemy ORM (asyncio) 2.0
 
-## Roadmap
-### 0.1.x
+## Goals
 - [x] Basic notifier functionality
 - [x] Ability to save up to 2 addresses
 - [x] Ability to list and remove addresses
 - [x] Tbilisi support [GWP, Telasi]
-### 0.2.x
 - [ ] Batumi support
 - [ ] Kutaisi support
-- [ ] \(Optional) Mobile providers support [Magti, Silknet etc.]
-### 0.3.x
-- [ ] Manage subscriptions to specific providers (on/off) through dialog
-### 1.0.x
 - [ ] Localization (English, Georgian, Russian)
+- [ ] \(Optional) Mobile providers support [Magti, Silknet etc.]
+- [ ] Manage subscriptions to specific providers (on/off) through dialog
 
 ## Installation (with Docker)
 ### Variables
