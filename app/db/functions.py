@@ -101,10 +101,12 @@ async def is_address_num_exceeded(tg_chat_id: str, session: AsyncSession) -> Non
     stmt = select(Chat).where(Chat.tg_chat_id == tg_chat_id).options(selectinload(Chat.addresses))
     query = await session.execute(stmt)
     chat = query.scalar_one_or_none()
-    chat_addresses_count = len(chat.addresses)
-    if chat_addresses_count >= MAX_ADDRESSES_PER_CHAT:
-        raise AddressesNumExceeded(f"Number of addresses exceeded for chat: {tg_chat_id}.")
-    pass
+    if chat.addresses:
+        chat_addresses_count = len(chat.addresses)
+        if chat_addresses_count >= MAX_ADDRESSES_PER_CHAT:
+            raise AddressesNumExceeded(f"Number of addresses exceeded for chat: {tg_chat_id}.")
+    else:
+        pass
 
 
 async def insert_address(tg_chat_id: str, address: dict, session: AsyncSession) -> bool | None:
