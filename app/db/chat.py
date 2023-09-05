@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List, TYPE_CHECKING
 from app.db.base import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Integer
+from sqlalchemy import BigInteger, Integer
 
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ class Chat(Base):
     __tablename__ = "chats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    tg_chat_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    tg_chat_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     state: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     addresses: Mapped[List["Address"]] = relationship("Address", cascade="all, delete")
     sent_outages: Mapped[List["SentOutage"]] = relationship("SentOutage", cascade="all, delete")
