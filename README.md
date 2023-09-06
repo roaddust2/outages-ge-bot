@@ -8,7 +8,7 @@ It is an app written in Python with the aiogram framework. This bot will assist 
 
 ## Stack
 - Python 3.11
-- Aiogram 3.0.0rc2
+- Aiogram 3.0.0
 - SQLAlchemy ORM (asyncio) 2.0
 
 ## Goals
@@ -84,3 +84,5 @@ It is an app written in Python with the aiogram framework. This bot will assist 
   # Start application
   make start
   ```
+<hr>
+Deployed on: <a href="https://railway.app?referralCode=iG3x6V">Railway</a>

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "outages-ge-bot"
-version = "0.1.1"
+version = "0.1.4"
 description = "Telegram bot that notifies you of outages in Georgia (the country)"
 authors = ["roaddust2 <roaddust2@yahoo.com>"]
 license = "GPL-3.0-only"
@@ -9,7 +9,7 @@ packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-aiogram = {version = "^3.0.0rc2", allow-prereleases = true}
+aiogram = "3.0.0"
 sqlalchemy = "2.0.18"
 psycopg2-binary = "2.9.6"
 alembic = "1.11.1"
