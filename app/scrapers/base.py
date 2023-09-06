@@ -1,10 +1,11 @@
+from abc import ABC, abstractmethod
 import logging
 import aiohttp
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 
-class AbstractProvider:
+class AbstractProvider(ABC):
     """Provider abstract class"""
 
     TYPE = 'type'
@@ -13,9 +14,6 @@ class AbstractProvider:
         {"url": urljoin(ROOT_URL, '/planned'), "emergency": False},
         {"url": urljoin(ROOT_URL, '/emergency'), "emergency": True}
     ]
-
-    def __init__(self) -> None:
-        pass
 
     async def collect_outages(self) -> list:
         """Wrapper"""
@@ -37,10 +35,12 @@ class AbstractProvider:
         soup = BeautifulSoup(response_text, 'html.parser')
         return soup
 
+    @abstractmethod
     async def scrap_notifications(self) -> list:
         """Scraps notifications based on their type from webpage"""
-        return []
+        pass
 
+    @abstractmethod
     async def parse_notifications_info(self, notifications: list) -> list:
         """Parses info from notifications"""
-        return []
+        pass
