@@ -2,6 +2,7 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from app.handlers import (
     start,
     addresses,
@@ -38,21 +39,19 @@ async def main():
 
     # Init scheduler and add jobs
     scheduler = AsyncIOScheduler(timezone=TIMEZONE, jobstores=jobstores)
+    notify_trigger = CronTrigger.from_crontab("0,30 8-17 * * *")  # Every 30 minutes from 08:00 - 18:00
+    clean_trigger = CronTrigger.from_crontab("0 0 * * fri")  # Every Friday at 00:00 Midnight
     scheduler.start()
     scheduler.add_job(
         notify,
         jobstore='default',
-        trigger="interval",
-        minutes=30,
+        trigger=notify_trigger,
         kwargs={"bot": bot, "session": sessionmaker}
     )
     scheduler.add_job(
         clean_sent_outages,
         jobstore='default',
-        trigger="cron",
-        day_of_week="sun",
-        hour=0,
-        minute=0,
+        trigger=clean_trigger,
         kwargs={"session": sessionmaker}
     )
 

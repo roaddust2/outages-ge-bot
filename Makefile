@@ -42,11 +42,3 @@ compose-build:
 
 compose-up:
 	docker compose up -d
-
-
-# Railway
-
-railway:
-	poetry install
-	poetry run alembic upgrade head
-	poetry run python3 -m app.main
