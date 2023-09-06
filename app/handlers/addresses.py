@@ -13,7 +13,7 @@ from app.db.functions import (
     is_address_num_exceeded,
     insert_address,
     select_full_addresses,
-    delete_address,
+    delete_address
 )
 
 
@@ -23,6 +23,7 @@ router = Router()
 # Add address handlers
 
 AVAILIBLE_CITIES = ["Tbilisi",]
+STREET_PATTERN = r'^[a-zA-Zა-ჰ\s-]{4,254}$'
 
 
 class AddAddress(StatesGroup):
@@ -53,7 +54,7 @@ async def cmd_add_address(message: Message, state: FSMContext, session: AsyncSes
 async def city_chosen(message: Message, state: FSMContext):
     await state.update_data(chosen_city=message.text)
     await message.answer(
-        "<b>2. Enter a street:</b>\n\n"
+        "<b>2. Enter a street (without a number):</b>\n\n"
         "<i>You can text in both English or Georgian.</i>",
         reply_markup=ReplyKeyboardRemove()
     )
@@ -68,7 +69,7 @@ async def city_chosen_incorrectly(message: Message):
     )
 
 
-@router.message(AddAddress.entering_street)
+@router.message(AddAddress.entering_street, F.text.regexp(STREET_PATTERN))
 async def street_entered(message: Message, state: FSMContext, session: AsyncSession):
 
     user_data = await state.get_data()
@@ -90,6 +91,21 @@ async def street_entered(message: Message, state: FSMContext, session: AsyncSess
             reply_markup=make_main_keyboard()
         )
         await state.clear()
+
+
+@router.message(AddAddress.entering_street)
+async def street_name_too_small(message: Message):
+    await message.answer(
+        "<b>The street you entered doesn't match the requirements:</b>\n"
+        "- No digits\n"
+        "- More than 3 and less than 255 symbols\n"
+        "- Only Latin or Georgian letters\n"
+        "Please, try again",
+    )
+    await message.answer(
+        "<b>2. Enter a street (without a number):</b>\n\n"
+        "<i>You can text in both English or Georgian.</i>"
+    )
 
 
 # Remove address handlers
