@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.11.4-slim-bookworm
 
 LABEL name="outages-ge-bot" \
-      version="0.1.0" \
+      version="0.1.5" \
       description="Telegram bot that notifies you of outages in Georgia (the country)" \
       authors="roaddust2 <roaddust2@yahoo.com>" \
       license="GPL-3.0-only"

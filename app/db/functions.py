@@ -199,7 +199,7 @@ async def delete_sent_outages(session: AsyncSession) -> bool | None:
     async with session() as session:
         async with session.begin():
             try:
-                stmt = select(SentOutage).where(SentOutage.date < one_week_before)
+                stmt = select(SentOutage).where(SentOutage.created_at < one_week_before)
                 query = await session.execute(stmt)
                 sent_outages = query.scalars().all()
                 for row in sent_outages:
