@@ -15,7 +15,7 @@ services:
   bot:
     container_name: bot
     restart: always
-    image: roaddust2/outages-ge-bot:0.1.5
+    image: roaddust2/outages-ge-bot:0.1.6
     env_file:
       - .env
     command: sh -c "alembic upgrade head && python3 -m app.main"
