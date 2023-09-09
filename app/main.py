@@ -33,9 +33,7 @@ async def main():
     dp.update.middleware(DbSessionMiddleware(session_pool=sessionmaker))
 
     # Bind routers to dispatcher
-    dp.include_router(start.router)
-    dp.include_router(addresses.router)
-    dp.include_router(additional.router)
+    dp.include_routers(start.router, addresses.router, additional.router)
 
     # Init scheduler and add jobs
     scheduler = AsyncIOScheduler(timezone=TIMEZONE, jobstores=jobstores)
