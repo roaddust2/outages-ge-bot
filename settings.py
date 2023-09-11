@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 from apscheduler.jobstores.memory import MemoryJobStore
-from deep_translator import GoogleTranslator
 
 
 # Environment variables settings
@@ -32,10 +31,3 @@ TIMEZONE = "Asia/Tbilisi"
 jobstores = {
     'default': MemoryJobStore(),
 }
-
-
-# Translation configuration
-# Google Translate is used as provider
-# https://deep-translator.readthedocs.io/en/latest/README.html#id1
-
-translator = GoogleTranslator(source='ka', target='en')

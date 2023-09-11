@@ -3,14 +3,13 @@ from app.keyboards.main_kb import make_main_keyboard
 from app.scrapers.gwp import GWP
 from app.scrapers.telasi import Telasi
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.utils.translator import translate
 from app.db.functions import (
     select_chats,
     insert_sent_outages,
     delete_sent_outages,
     select_chat_outages
 )
-
-from settings import translator
 
 
 # Job for sending outage notifications to chats
@@ -98,10 +97,10 @@ async def notify(bot: Bot, session: AsyncSession):  # noqa: C901
                 emergency = outage.get("emergency")
                 title = outage.get("title")
                 info = outage.get("info")
-                en_info = translator.translate(info)
+                en_info = await translate(info)
 
                 if street in info or street in en_info:
-                    en_title = translator.translate(title)
+                    en_title = await translate(title)
                     await send_notification(bot, tg_chat_id, emergency, type, date, en_title, en_info, street)
                     outages_to_insert.append(outage)
 
